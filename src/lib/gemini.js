@@ -1,6 +1,6 @@
 import { compressImageFile, fileToBase64 } from './utils'
 
-const MODEL = 'gemini-2.0-flash'
+const MODEL = 'gemini-2.5-flash'
 const API_BASE = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`
 
 const SCHEMA = `{
