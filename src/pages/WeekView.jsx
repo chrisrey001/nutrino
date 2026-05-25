@@ -4,10 +4,15 @@ import { useMealsRange } from '../hooks/useMealsRange'
 import { useProfile } from '../hooks/useProfile'
 import MacroBar from '../components/MacroBar'
 import MealCard from '../components/MealCard'
-import { getWeekDates, sumMacros, toLocalDateString, formatShortDate } from '../lib/utils'
+import { getWeekDates, sumMacros, toLocalDateString, formatShortDate, MEAL_TYPES, formatTime, macroBarColor } from '../lib/utils'
 import { generateWeeklyPDF } from '../lib/pdf'
 
 const todayStr = toLocalDateString()
+
+function formatMinutes(mins) {
+  const h = Math.floor(mins / 60), m = mins % 60
+  return `${h % 12 || 12}:${String(m).padStart(2, '0')}${h >= 12 ? 'pm' : 'am'}`
+}
 
 export default function WeekView() {
   const navigate = useNavigate()
@@ -25,12 +30,46 @@ export default function WeekView() {
   const weekDates = useMemo(() => getWeekDates(refDate), [refDate])
   const { mealsByDate, loading } = useMealsRange(weekDates)
 
-  const weekTotals = useMemo(() => {
-    const allMeals = weekDates.flatMap(d => mealsByDate[d] || [])
-    return sumMacros(allMeals)
-  }, [mealsByDate, weekDates])
+  const allMeals = useMemo(
+    () => weekDates.flatMap(d => mealsByDate[d] || []),
+    [mealsByDate, weekDates]
+  )
 
+  const weekTotals = useMemo(() => sumMacros(allMeals), [allMeals])
   const daysWithMeals = weekDates.filter(d => (mealsByDate[d] || []).length > 0).length
+  const avgCal = daysWithMeals > 0 ? Math.round(weekTotals.calories / daysWithMeals) : 0
+
+  // Days on-target: calories within 80–115% of goal
+  const onTargetDays = weekDates.filter(d => {
+    const meals = mealsByDate[d] || []
+    if (!meals.length) return false
+    const cal = sumMacros(meals).calories
+    const pct = cal / profile.calorie_goal
+    return pct >= 0.8 && pct <= 1.15
+  }).length
+
+  // Meal type breakdown (types with count > 0)
+  const mealTypeCounts = useMemo(() =>
+    MEAL_TYPES.map(mt => ({ ...mt, count: allMeals.filter(m => m.meal_type === mt.value).length }))
+      .filter(mt => mt.count > 0),
+    [allMeals]
+  )
+
+  // Average eating time per meal type
+  const avgEatingTimes = useMemo(() => {
+    const byType = {}
+    allMeals.forEach(meal => {
+      const t = new Date(meal.created_at)
+      const mins = t.getHours() * 60 + t.getMinutes()
+      ;(byType[meal.meal_type] = byType[meal.meal_type] || []).push(mins)
+    })
+    return Object.fromEntries(
+      Object.entries(byType).map(([type, arr]) => {
+        const avg = Math.round(arr.reduce((a, b) => a + b, 0) / arr.length)
+        return [type, formatMinutes(avg)]
+      })
+    )
+  }, [allMeals])
 
   const weekLabel = (() => {
     const start = new Date(weekDates[0] + 'T12:00:00')
@@ -51,11 +90,7 @@ export default function WeekView() {
     }
   }
 
-  const toggleDay = (date) => {
-    setExpanded(prev => ({ ...prev, [date]: !prev[date] }))
-  }
-
-  const avgCal = daysWithMeals > 0 ? Math.round(weekTotals.calories / daysWithMeals) : 0
+  const toggleDay = (date) => setExpanded(prev => ({ ...prev, [date]: !prev[date] }))
 
   return (
     <div className="flex flex-col h-screen max-h-screen">
@@ -83,7 +118,18 @@ export default function WeekView() {
           </button>
         </div>
 
-        {/* Weekly calorie total */}
+        {/* Stats strip */}
+        {daysWithMeals > 0 && (
+          <div className="flex items-center gap-3 text-xs text-gray-500 mb-3 bg-gray-50 rounded-xl px-3 py-2">
+            <span>📅 <span className="font-semibold text-gray-700">{daysWithMeals}/7</span> days</span>
+            <span className="text-gray-300">·</span>
+            <span>🍽️ <span className="font-semibold text-gray-700">{allMeals.length}</span> meals</span>
+            <span className="text-gray-300">·</span>
+            <span>🎯 <span className="font-semibold text-gray-700">{onTargetDays}</span> on-target</span>
+          </div>
+        )}
+
+        {/* Avg calories */}
         <div className="flex items-baseline gap-1 mb-3">
           <span className="text-2xl font-bold text-gray-900">{avgCal}</span>
           <span className="text-sm text-gray-400">avg kcal / day</span>
@@ -91,24 +137,44 @@ export default function WeekView() {
           <span className="text-sm text-gray-400">goal {profile.calorie_goal}</span>
         </div>
 
+        {/* Macro bars with per-nutrient colors */}
         <div className="space-y-2 mb-3">
           <MacroBar
             label="Carbs (avg)"
             eaten={daysWithMeals > 0 ? Math.round(weekTotals.carbs_g / daysWithMeals) : 0}
             goal={profile.carbs_goal_g}
+            color="bg-blue-500"
           />
           <MacroBar
             label="Protein (avg)"
             eaten={daysWithMeals > 0 ? Math.round(weekTotals.protein_g / daysWithMeals) : 0}
             goal={profile.protein_goal_g}
+            color="bg-orange-400"
           />
           <MacroBar
             label="Fat (avg)"
             eaten={daysWithMeals > 0 ? Math.round(weekTotals.fats_g / daysWithMeals) : 0}
             goal={profile.fats_goal_g}
+            color="bg-violet-500"
           />
         </div>
 
+        {/* Meal type breakdown */}
+        {mealTypeCounts.length > 0 && (
+          <div className="flex gap-2 overflow-x-auto pb-1 mb-3 scrollbar-none">
+            {mealTypeCounts.map(mt => (
+              <div key={mt.value} className="flex-shrink-0 flex items-center gap-1 bg-gray-50 rounded-lg px-2.5 py-1.5 text-xs">
+                <span>{mt.emoji}</span>
+                <span className="font-semibold text-gray-700">{mt.count}</span>
+                {avgEatingTimes[mt.value] && (
+                  <span className="text-gray-400 ml-0.5">@ {avgEatingTimes[mt.value]}</span>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Export */}
         <button
           onClick={handleExport}
           disabled={exporting || daysWithMeals === 0}
@@ -138,6 +204,19 @@ export default function WeekView() {
           const d = new Date(date + 'T12:00:00')
           const dayLabel = d.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
 
+          // Per-day calorie bar
+          const calPct = profile.calorie_goal > 0 ? Math.min(100, Math.round((t.calories / profile.calorie_goal) * 100)) : 0
+          const calBarColor = macroBarColor(t.calories, profile.calorie_goal)
+
+          // Eating window
+          let eatingWindow = ''
+          if (meals.length >= 2) {
+            const times = meals.map(m => new Date(m.created_at)).sort((a, b) => a - b)
+            eatingWindow = `${formatTime(times[0].toISOString())}–${formatTime(times[times.length - 1].toISOString())}`
+          } else if (meals.length === 1) {
+            eatingWindow = formatTime(meals[0].created_at)
+          }
+
           return (
             <div
               key={date}
@@ -148,24 +227,30 @@ export default function WeekView() {
                 className="w-full px-4 py-3 flex items-center justify-between text-left"
                 onClick={() => toggleDay(date)}
               >
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-0.5">
                     <span className={`text-sm font-semibold ${isToday ? 'text-green-600' : 'text-gray-800'}`}>
                       {dayLabel}
-                      {isToday && <span className="ml-2 text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full">Today</span>}
                     </span>
+                    {isToday && <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full">Today</span>}
                   </div>
                   {meals.length > 0 ? (
-                    <p className="text-xs text-gray-500 mt-0.5">
-                      {t.calories} kcal &nbsp;·&nbsp; {meals.length} meal{meals.length !== 1 ? 's' : ''}
-                      &nbsp;·&nbsp; {Math.round(t.carbs_g)}C {Math.round(t.protein_g)}P {Math.round(t.fats_g)}F
-                    </p>
+                    <>
+                      <p className="text-xs text-gray-500">
+                        {t.calories} kcal · {meals.length} meal{meals.length !== 1 ? 's' : ''}
+                        {eatingWindow ? ` · ${eatingWindow}` : ''}
+                      </p>
+                      {/* Per-day calorie sparkline */}
+                      <div className="mt-1.5 w-full bg-gray-100 rounded-full h-1 overflow-hidden">
+                        <div className={`h-1 rounded-full ${calBarColor}`} style={{ width: `${calPct}%` }} />
+                      </div>
+                    </>
                   ) : (
-                    <p className="text-xs text-gray-400 mt-0.5">No meals logged</p>
+                    <p className="text-xs text-gray-400">No meals logged</p>
                   )}
                 </div>
                 <svg
-                  className={`w-4 h-4 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                  className={`w-4 h-4 text-gray-400 transition-transform flex-shrink-0 ml-2 ${isExpanded ? 'rotate-180' : ''}`}
                   fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
                 >
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />

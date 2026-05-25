@@ -1,8 +1,8 @@
 import { macroBarColor } from '../lib/utils'
 
-export default function MacroBar({ label, eaten, goal, unit = 'g', className = '' }) {
+export default function MacroBar({ label, eaten, goal, unit = 'g', color, className = '' }) {
   const pct = goal > 0 ? Math.min(100, Math.round((eaten / goal) * 100)) : 0
-  const color = macroBarColor(eaten, goal)
+  const barColor = macroBarColor(eaten, goal, color)
 
   return (
     <div className={`${className}`}>
@@ -14,7 +14,7 @@ export default function MacroBar({ label, eaten, goal, unit = 'g', className = '
       </div>
       <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
         <div
-          className={`h-2 rounded-full transition-all duration-500 ${color}`}
+          className={`h-2 rounded-full transition-all duration-500 ${barColor}`}
           style={{ width: `${pct}%` }}
         />
       </div>

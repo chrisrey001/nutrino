@@ -1,10 +1,14 @@
+import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useMeals } from '../hooks/useMeals'
 import { useProfile } from '../hooks/useProfile'
 import MacroBar from '../components/MacroBar'
 import MealCard from '../components/MealCard'
-import { sumMacros, formatDate } from '../lib/utils'
+import EditMealModal from '../components/EditMealModal'
+import { sumMacros, formatDate, toLocalDateString } from '../lib/utils'
 import { supabase } from '../lib/supabase'
+
+const today = toLocalDateString()
 
 export default function DayDetail() {
   const { date } = useParams()
@@ -13,9 +17,15 @@ export default function DayDetail() {
   const { profile } = useProfile()
   const totals = sumMacros(meals)
 
+  const [editingMeal, setEditingMeal] = useState(null)
+
   const handleDelete = async (id) => {
     await supabase.from('meals').delete().eq('id', id)
     refresh()
+  }
+
+  const handleLogAgain = (meal) => {
+    navigate(`/log?type=${meal.meal_type}&desc=${encodeURIComponent(meal.description || '')}`)
   }
 
   return (
@@ -40,9 +50,9 @@ export default function DayDetail() {
         </div>
 
         <div className="space-y-2">
-          <MacroBar label="Carbs" eaten={totals.carbs_g} goal={profile.carbs_goal_g} />
-          <MacroBar label="Protein" eaten={totals.protein_g} goal={profile.protein_goal_g} />
-          <MacroBar label="Fat" eaten={totals.fats_g} goal={profile.fats_goal_g} />
+          <MacroBar label="Carbs" eaten={totals.carbs_g} goal={profile.carbs_goal_g} color="bg-blue-500" />
+          <MacroBar label="Protein" eaten={totals.protein_g} goal={profile.protein_goal_g} color="bg-orange-400" />
+          <MacroBar label="Fat" eaten={totals.fats_g} goal={profile.fats_goal_g} color="bg-violet-500" />
         </div>
       </div>
 
@@ -59,7 +69,13 @@ export default function DayDetail() {
           <div className="space-y-3">
             {meals.map(meal => (
               <div key={meal.id}>
-                <MealCard meal={meal} onDelete={handleDelete} onClick={() => {}} />
+                <MealCard
+                  meal={meal}
+                  onClick={() => {}}
+                  onEdit={setEditingMeal}
+                  onDelete={handleDelete}
+                  onLogAgain={date === today ? undefined : handleLogAgain}
+                />
                 {meal.items?.length > 0 && (
                   <div className="mt-1 ml-4 pl-3 border-l-2 border-gray-100">
                     {meal.items.map((item, i) => (
@@ -75,6 +91,14 @@ export default function DayDetail() {
           </div>
         )}
       </div>
+
+      {editingMeal && (
+        <EditMealModal
+          meal={editingMeal}
+          onClose={() => setEditingMeal(null)}
+          onSaved={refresh}
+        />
+      )}
     </div>
   )
 }

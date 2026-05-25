@@ -54,11 +54,19 @@ export function sumMacros(meals) {
   )
 }
 
-export function macroBarColor(eaten, goal) {
+export function macroBarColor(eaten, goal, color = 'bg-green-500') {
   const pct = goal > 0 ? eaten / goal : 0
   if (pct > 1.25) return 'bg-red-500'
   if (pct > 1.1) return 'bg-amber-500'
-  return 'bg-green-500'
+  return color
+}
+
+export function formatTime(isoString) {
+  if (!isoString) return ''
+  const d = new Date(isoString)
+  const h = d.getHours(), m = d.getMinutes()
+  const ampm = h >= 12 ? 'pm' : 'am'
+  return `${h % 12 || 12}:${String(m).padStart(2, '0')}${ampm}`
 }
 
 export function generateDailyNote(totals, goals) {

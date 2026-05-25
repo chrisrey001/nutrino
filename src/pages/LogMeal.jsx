@@ -14,7 +14,7 @@ export default function LogMeal() {
   const [imageFile, setImageFile] = useState(null)
   const [imagePreview, setImagePreview] = useState(null)
   const [mealType, setMealType] = useState(params.get('type') || 'breakfast')
-  const [textInput, setTextInput] = useState('')
+  const [textInput, setTextInput] = useState(params.get('desc') || '')
   const [analyzing, setAnalyzing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
