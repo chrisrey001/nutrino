@@ -49,11 +49,6 @@ async function callGemini(parts, apiKey) {
   if (!res.ok) {
     const err = await res.json().catch(() => ({}))
     const msg = err?.error?.message || `Gemini error ${res.status}`
-    if (msg.toLowerCase().includes('quota') || msg.toLowerCase().includes('limit')) {
-      throw new Error(
-        'Quota exceeded. Go to aistudio.google.com → your project → enable billing (free, just needs a card for identity verification), then retry.'
-      )
-    }
     throw new Error(msg)
   }
 
