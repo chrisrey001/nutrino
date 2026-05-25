@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { analyzeMeal } from '../lib/gemini'
+import { analyzeMeal, analyzeMealText } from '../lib/gemini'
 import { supabase } from '../lib/supabase'
 import { HARDCODED_USER_ID, MEAL_TYPES, toLocalDateString } from '../lib/utils'
 
@@ -14,12 +14,12 @@ export default function LogMeal() {
   const [imageFile, setImageFile] = useState(null)
   const [imagePreview, setImagePreview] = useState(null)
   const [mealType, setMealType] = useState(params.get('type') || 'breakfast')
+  const [textInput, setTextInput] = useState('')
   const [analyzing, setAnalyzing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
   const [result, setResult] = useState(null)
-  // Editable fields
   const [description, setDescription] = useState('')
   const [items, setItems] = useState([])
   const [calories, setCalories] = useState('')
@@ -27,7 +27,17 @@ export default function LogMeal() {
   const [protein, setProtein] = useState('')
   const [fats, setFats] = useState('')
 
-  const handleFile = async (e) => {
+  const applyResult = (data, fallbackDescription = '') => {
+    setResult(data)
+    setDescription(data.description || fallbackDescription)
+    setItems(data.items || [])
+    setCalories(String(data.total_calories || ''))
+    setCarbs(String(data.total_carbs_g || ''))
+    setProtein(String(data.total_protein_g || ''))
+    setFats(String(data.total_fats_g || ''))
+  }
+
+  const handleFile = (e) => {
     const file = e.target.files?.[0]
     if (!file) return
     setImageFile(file)
@@ -37,7 +47,6 @@ export default function LogMeal() {
   }
 
   const handleAnalyze = async () => {
-    if (!imageFile) return
     const apiKey = localStorage.getItem('gemini_api_key')
     if (!apiKey) {
       setError('No Gemini API key found. Go to Settings and add your key.')
@@ -47,14 +56,13 @@ export default function LogMeal() {
     setAnalyzing(true)
     setError('')
     try {
-      const data = await analyzeMeal(imageFile, apiKey)
-      setResult(data)
-      setDescription(data.description || '')
-      setItems(data.items || [])
-      setCalories(String(data.total_calories || ''))
-      setCarbs(String(data.total_carbs_g || ''))
-      setProtein(String(data.total_protein_g || ''))
-      setFats(String(data.total_fats_g || ''))
+      if (imageFile) {
+        const data = await analyzeMeal(imageFile, apiKey)
+        applyResult(data)
+      } else {
+        const data = await analyzeMealText(textInput, apiKey)
+        applyResult(data, textInput)
+      }
     } catch (err) {
       setError(err.message)
     } finally {
@@ -103,6 +111,8 @@ export default function LogMeal() {
     }
   }
 
+  const canAnalyze = (imagePreview || textInput.trim().length > 0) && !result
+
   return (
     <div className="min-h-screen bg-gray-50 max-w-md mx-auto">
       {/* Header */}
@@ -136,7 +146,7 @@ export default function LogMeal() {
           </div>
         </div>
 
-        {/* Camera / image */}
+        {/* Photo */}
         <div>
           <label className="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-2">Photo</label>
           {imagePreview ? (
@@ -164,8 +174,26 @@ export default function LogMeal() {
           <input ref={fileRef} type="file" accept="image/*" capture="environment" onChange={handleFile} className="hidden" />
         </div>
 
-        {/* Analyze */}
-        {imagePreview && !result && (
+        {/* Text input */}
+        {!result && (
+          <div>
+            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-2">
+              {imagePreview ? 'Add context (optional)' : 'Describe your meal'}
+            </label>
+            <textarea
+              value={textInput}
+              onChange={e => { setTextInput(e.target.value); setError('') }}
+              placeholder={imagePreview
+                ? 'e.g. large portion, added extra cheese…'
+                : 'e.g. 2 scrambled eggs, whole wheat toast, black coffee'}
+              rows={3}
+              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
+            />
+          </div>
+        )}
+
+        {/* Analyze button */}
+        {canAnalyze && (
           <button
             onClick={handleAnalyze}
             disabled={analyzing}
@@ -244,18 +272,14 @@ export default function LogMeal() {
           </div>
         )}
 
-        {/* Manual entry fallback */}
-        {!result && !imagePreview && (
+        {/* Manual entry fallback — only when no photo and no text */}
+        {!result && !imagePreview && !textInput.trim() && (
           <button
             onClick={() => setResult({ items: [] })}
             className="w-full text-sm text-gray-400 underline text-center"
           >
-            Enter manually without photo
+            Enter manually without AI
           </button>
-        )}
-
-        {!result && imagePreview === null && (
-          <></>
         )}
 
         {result && (
