@@ -1,6 +1,6 @@
 import { compressImageFile, fileToBase64 } from './utils'
 
-const MODEL = 'gemini-1.5-flash'
+const MODEL = 'gemini-2.0-flash-lite'
 
 const PROMPT = `Analyze this meal photo and estimate the nutritional content.
 
@@ -35,7 +35,7 @@ export async function analyzeMeal(imageFile, apiKey) {
   const mimeType = compressed.type || 'image/jpeg'
 
   const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1/models/${MODEL}:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${apiKey}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
