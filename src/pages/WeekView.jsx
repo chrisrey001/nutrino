@@ -1,11 +1,33 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { useMealsRange } from '../hooks/useMealsRange'
 import { useProfile } from '../hooks/useProfile'
-import { getWeekDates, sumMacros, toLocalDateString, generateWeeklyNote } from '../lib/utils'
+import { getWeekDates, sumMacros, toLocalDateString, generateWeeklyNote, formatTime } from '../lib/utils'
 import { generateWeeklyPDF } from '../lib/pdf'
 import { generateWeekInsight } from '../lib/gemini'
 
 const todayStr = toLocalDateString()
+const INSIGHT_HOUR = 21 // 9pm
+
+function insightCacheKey(weekKey) { return `nutrino_insight_${weekKey}` }
+
+function loadCachedInsight(weekKey) {
+  try {
+    const raw = localStorage.getItem(insightCacheKey(weekKey))
+    return raw ? JSON.parse(raw) : null
+  } catch { return null }
+}
+
+function saveCachedInsight(weekKey, text) {
+  localStorage.setItem(insightCacheKey(weekKey), JSON.stringify({ text, generatedAt: new Date().toISOString() }))
+}
+
+function isCacheStale(cached, isPastWeek) {
+  if (!cached) return true
+  if (isPastWeek) return false
+  return new Date(cached.generatedAt).toDateString() !== new Date().toDateString()
+}
+
+function isPastNinepm() { return new Date().getHours() >= INSIGHT_HOUR }
 
 // --- SVG Chart Components ---
 
@@ -208,24 +230,62 @@ export default function WeekView() {
 
   const staticInsight = useMemo(() => generateWeeklyNote(weekTotals, profile, daysWithMeals), [weekTotals, profile, daysWithMeals])
 
-  // Fetch AI insight when week data is ready
+  const weekKey = weekDates[0]
+  const isPastWeek = weekDates[6] < todayStr
+
+  const weekStats = useMemo(() => ({
+    avgCal, calGoal: profile.calorie_goal,
+    avgCarbs, carbsGoal: profile.carbs_goal_g,
+    avgProtein, proteinGoal: profile.protein_goal_g,
+    avgFats, fatsGoal: profile.fats_goal_g,
+    daysLogged: daysWithMeals
+  }), [avgCal, avgCarbs, avgProtein, avgFats, profile, daysWithMeals])
+
+  // Load insight: use cache when fresh, auto-generate after 9pm or for past weeks
   useEffect(() => {
     if (loading || daysWithMeals === 0) { setAiInsight(null); return }
+
+    const cached = loadCachedInsight(weekKey)
+    const stale = isCacheStale(cached, isPastWeek)
+
+    // Use cache if fresh, or if stale but before 9pm on current week (show yesterday's rather than nothing)
+    if (cached && (!stale || (!isPastWeek && !isPastNinepm()))) {
+      setAiInsight({ text: cached.text, generatedAt: cached.generatedAt })
+      return
+    }
+
+    // Before 9pm on current week with no cache at all → show static, no API call
+    if (!isPastWeek && !isPastNinepm() && !cached) return
+
+    // Auto-generate: past week (always) or current week after 9pm or stale cache
     const apiKey = localStorage.getItem('gemini_api_key')
     if (!apiKey) return
     setInsightLoading(true)
-    setAiInsight(null)
-    generateWeekInsight({
-      avgCal, calGoal: profile.calorie_goal,
-      avgCarbs, carbsGoal: profile.carbs_goal_g,
-      avgProtein, proteinGoal: profile.protein_goal_g,
-      avgFats, fatsGoal: profile.fats_goal_g,
-      daysLogged: daysWithMeals
-    }, apiKey)
-      .then(text => { if (text) setAiInsight(text) })
+    generateWeekInsight(weekStats, apiKey)
+      .then(text => {
+        if (text) {
+          saveCachedInsight(weekKey, text)
+          setAiInsight({ text, generatedAt: new Date().toISOString() })
+        }
+      })
       .catch(() => {})
       .finally(() => setInsightLoading(false))
-  }, [weekDates.join(','), loading, daysWithMeals])
+  }, [weekKey, loading, daysWithMeals])
+
+  const handleRefreshInsight = useCallback(() => {
+    const apiKey = localStorage.getItem('gemini_api_key')
+    if (!apiKey || insightLoading || daysWithMeals === 0) return
+    setInsightLoading(true)
+    generateWeekInsight(weekStats, apiKey)
+      .then(text => {
+        if (text) {
+          saveCachedInsight(weekKey, text)
+          setAiInsight({ text, generatedAt: new Date().toISOString() })
+        }
+      })
+      .catch(() => {})
+      .finally(() => setInsightLoading(false))
+  }, [weekKey, weekStats, insightLoading, daysWithMeals])
 
   const weekLabel = (() => {
     const s = new Date(weekDates[0] + 'T12:00:00')
@@ -254,7 +314,7 @@ export default function WeekView() {
       {/* Sticky header */}
       <div className="bg-white border-b border-gray-100 px-4 pt-12 pb-4 sticky top-0 z-10 shadow-sm">
         <div className="flex items-center justify-between">
-          <button onClick={() => { setWeekOffset(o => o - 1); setAiInsight(null) }} className="p-2 text-gray-500 active:text-green-600">
+          <button onClick={() => { setWeekOffset(o => o - 1); setAiInsight(null); setInsightLoading(false) }} className="p-2 text-gray-500 active:text-green-600">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
             </svg>
@@ -263,7 +323,7 @@ export default function WeekView() {
             <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Week of</p>
             <p className="text-sm font-semibold text-gray-900">{weekLabel}</p>
           </div>
-          <button onClick={() => { setWeekOffset(o => o + 1); setAiInsight(null) }} disabled={weekOffset >= 0} className="p-2 text-gray-500 active:text-green-600 disabled:opacity-30">
+          <button onClick={() => { setWeekOffset(o => o + 1); setAiInsight(null); setInsightLoading(false) }} disabled={weekOffset >= 0} className="p-2 text-gray-500 active:text-green-600 disabled:opacity-30">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
             </svg>
@@ -285,9 +345,18 @@ export default function WeekView() {
           <>
             {/* AI Insight */}
             <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-lg">✨</span>
-                <p className="text-xs font-bold text-blue-700 uppercase tracking-wide">Weekly Insight</p>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">✨</span>
+                  <p className="text-xs font-bold text-blue-700 uppercase tracking-wide">Weekly Insight</p>
+                </div>
+                {localStorage.getItem('gemini_api_key') && !insightLoading && daysWithMeals > 0 && (
+                  <button onClick={handleRefreshInsight} className="text-blue-400 p-1 active:opacity-50" aria-label="Refresh insight">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                  </button>
+                )}
               </div>
               {insightLoading ? (
                 <div className="flex items-center gap-2 text-sm text-blue-400">
@@ -297,8 +366,20 @@ export default function WeekView() {
                   </svg>
                   Generating insight…
                 </div>
+              ) : aiInsight ? (
+                <>
+                  <p className="text-sm text-blue-900 leading-relaxed">{aiInsight.text}</p>
+                  <p className="text-xs text-blue-400 mt-2">
+                    Updated {new Date(aiInsight.generatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} at {formatTime(aiInsight.generatedAt)}
+                  </p>
+                </>
               ) : (
-                <p className="text-sm text-blue-900 leading-relaxed">{aiInsight || staticInsight}</p>
+                <>
+                  <p className="text-sm text-blue-900 leading-relaxed">{staticInsight}</p>
+                  {!isPastNinepm() && localStorage.getItem('gemini_api_key') && daysWithMeals > 0 && (
+                    <p className="text-xs text-blue-400 mt-2">AI summary updates at 9pm when the day is complete</p>
+                  )}
+                </>
               )}
             </div>
 
