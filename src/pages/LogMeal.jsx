@@ -46,13 +46,12 @@ export default function LogMeal() {
     setError('')
   }
 
-  const handleAnalyze = async () => {
+  const runAnalysis = async (text) => {
     const apiKey = localStorage.getItem('gemini_api_key')
     if (!apiKey) {
       setError('No Gemini API key found. Go to Settings and add your key.')
       return
     }
-
     setAnalyzing(true)
     setError('')
     try {
@@ -60,8 +59,19 @@ export default function LogMeal() {
         const data = await analyzeMeal(imageFile, apiKey)
         applyResult(data)
       } else {
-        const data = await analyzeMealText(textInput, apiKey)
-        applyResult(data, textInput)
+        const data = await analyzeMealText(text, apiKey)
+        // only update macros/items if called from inside the editor (description already set)
+        setItems(data.items || [])
+        setCalories(String(data.total_calories || ''))
+        setCarbs(String(data.total_carbs_g || ''))
+        setProtein(String(data.total_protein_g || ''))
+        setFats(String(data.total_fats_g || ''))
+        if (!result) {
+          setDescription(data.description || text)
+          setResult(data)
+        } else {
+          setResult(data)
+        }
       }
     } catch (err) {
       setError(err.message)
@@ -69,6 +79,9 @@ export default function LogMeal() {
       setAnalyzing(false)
     }
   }
+
+  const handleAnalyze = () => runAnalysis(textInput)
+  const handleAnalyzeDescription = () => runAnalysis(description)
 
   const handleSave = async () => {
     if (!calories) { setError('Please analyze or enter calories before saving.'); return }
@@ -218,16 +231,34 @@ export default function LogMeal() {
         {/* Results editor */}
         {result && (
           <div className="bg-white rounded-2xl shadow-sm p-4 space-y-4">
-            <h2 className="font-semibold text-gray-900">AI Analysis</h2>
+            <h2 className="font-semibold text-gray-900">Nutrition Details</h2>
 
             <div>
               <label className="text-xs font-medium text-gray-500 block mb-1">Description</label>
               <textarea
                 value={description}
-                onChange={e => setDescription(e.target.value)}
+                onChange={e => { setDescription(e.target.value); setError('') }}
+                placeholder="e.g. zucchini bread, 1 slice"
                 rows={2}
                 className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-green-500"
               />
+              {!imageFile && description.trim() && (
+                <button
+                  onClick={handleAnalyzeDescription}
+                  disabled={analyzing}
+                  className="mt-2 w-full h-10 bg-green-600 text-white rounded-xl font-semibold text-sm disabled:opacity-60 flex items-center justify-center gap-2"
+                >
+                  {analyzing ? (
+                    <>
+                      <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                      </svg>
+                      Estimating…
+                    </>
+                  ) : '✨ Estimate macros with AI'}
+                </button>
+              )}
             </div>
 
             {items.length > 0 && (
