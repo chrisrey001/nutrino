@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { useMeals } from '../hooks/useMeals'
 import { useProfile } from '../hooks/useProfile'
 import MealCard from '../components/MealCard'
+import MealDetailModal from '../components/MealDetailModal'
 import EditMealModal from '../components/EditMealModal'
 import { CaloriesCard, MacrosCard } from '../components/DayStats'
 import { sumMacros, toLocalDateString } from '../lib/utils'
@@ -22,6 +23,7 @@ export default function DayDetail() {
   const { meals, loading, refresh } = useMeals(date)
   const { profile } = useProfile()
   const totals = sumMacros(meals)
+  const [viewingMeal, setViewingMeal] = useState(null)
   const [editingMeal, setEditingMeal] = useState(null)
 
   const isToday = date === todayStr
@@ -79,14 +81,12 @@ export default function DayDetail() {
       {/* Scrollable content */}
       <div className="px-4 pt-4 pb-28 space-y-4">
         <CaloriesCard eaten={totals.calories} goal={profile.calorie_goal} />
-
         <MacrosCard
           carbs={totals.carbs_g} carbsGoal={profile.carbs_goal_g}
           protein={totals.protein_g} proteinGoal={profile.protein_goal_g}
           fats={totals.fats_g} fatsGoal={profile.fats_goal_g}
         />
 
-        {/* Meals */}
         {loading ? (
           <div className="flex items-center justify-center h-32 text-gray-400 text-sm">Loading…</div>
         ) : meals.length === 0 ? (
@@ -97,29 +97,26 @@ export default function DayDetail() {
         ) : (
           <div className="space-y-3">
             {meals.map(meal => (
-              <div key={meal.id}>
-                <MealCard
-                  meal={meal}
-                  onClick={() => {}}
-                  onEdit={setEditingMeal}
-                  onDelete={handleDelete}
-                  onLogAgain={!isToday ? handleLogAgain : undefined}
-                />
-                {meal.items?.length > 0 && (
-                  <div className="mt-1 ml-4 pl-3 border-l-2 border-gray-100">
-                    {meal.items.map((item, i) => (
-                      <div key={i} className="flex justify-between text-xs text-gray-500 py-0.5">
-                        <span>{item.name}</span>
-                        <span className="text-gray-400">{item.calories} kcal · {Math.round(item.carbs_g || 0)}C {Math.round(item.protein_g || 0)}P {Math.round(item.fats_g || 0)}F</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+              <MealCard
+                key={meal.id}
+                meal={meal}
+                onClick={() => setViewingMeal(meal)}
+                onAdd={() => navigate(`/log?type=${meal.meal_type}`)}
+              />
             ))}
           </div>
         )}
       </div>
+
+      {viewingMeal && (
+        <MealDetailModal
+          meal={viewingMeal}
+          onClose={() => setViewingMeal(null)}
+          onEdit={meal => { setViewingMeal(null); setEditingMeal(meal) }}
+          onDelete={id => { handleDelete(id); setViewingMeal(null) }}
+          onLogAgain={!isToday ? handleLogAgain : undefined}
+        />
+      )}
 
       {editingMeal && (
         <EditMealModal

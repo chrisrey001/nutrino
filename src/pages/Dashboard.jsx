@@ -1,7 +1,10 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMeals } from '../hooks/useMeals'
 import { useProfile } from '../hooks/useProfile'
 import MealCard from '../components/MealCard'
+import MealDetailModal from '../components/MealDetailModal'
+import EditMealModal from '../components/EditMealModal'
 import { CaloriesCard, MacrosCard } from '../components/DayStats'
 import { toLocalDateString, sumMacros } from '../lib/utils'
 import { supabase } from '../lib/supabase'
@@ -13,6 +16,8 @@ export default function Dashboard() {
   const { profile } = useProfile()
   const navigate = useNavigate()
   const totals = sumMacros(meals)
+  const [viewingMeal, setViewingMeal] = useState(null)
+  const [editingMeal, setEditingMeal] = useState(null)
 
   const handleDelete = async (id) => {
     await supabase.from('meals').delete().eq('id', id)
@@ -44,14 +49,12 @@ export default function Dashboard() {
       {/* Scrollable content */}
       <div className="px-4 pt-4 pb-28 space-y-4">
         <CaloriesCard eaten={totals.calories} goal={profile.calorie_goal} />
-
         <MacrosCard
           carbs={totals.carbs_g} carbsGoal={profile.carbs_goal_g}
           protein={totals.protein_g} proteinGoal={profile.protein_goal_g}
           fats={totals.fats_g} fatsGoal={profile.fats_goal_g}
         />
 
-        {/* Meals */}
         {loading ? (
           <div className="flex items-center justify-center h-32 text-gray-400 text-sm">Loading…</div>
         ) : meals.length === 0 ? (
@@ -66,8 +69,8 @@ export default function Dashboard() {
               <MealCard
                 key={meal.id}
                 meal={meal}
-                onClick={() => navigate(`/day/${today}`)}
-                onDelete={handleDelete}
+                onClick={() => setViewingMeal(meal)}
+                onAdd={() => navigate(`/log?type=${meal.meal_type}`)}
               />
             ))}
           </div>
@@ -84,6 +87,23 @@ export default function Dashboard() {
           <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
         </svg>
       </button>
+
+      {viewingMeal && (
+        <MealDetailModal
+          meal={viewingMeal}
+          onClose={() => setViewingMeal(null)}
+          onEdit={meal => { setViewingMeal(null); setEditingMeal(meal) }}
+          onDelete={id => { handleDelete(id); setViewingMeal(null) }}
+        />
+      )}
+
+      {editingMeal && (
+        <EditMealModal
+          meal={editingMeal}
+          onClose={() => setEditingMeal(null)}
+          onSaved={refresh}
+        />
+      )}
     </div>
   )
 }

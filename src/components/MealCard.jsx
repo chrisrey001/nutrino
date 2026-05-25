@@ -1,78 +1,78 @@
 import { getMealMeta } from '../lib/utils'
 
-export default function MealCard({ meal, onClick, onDelete, onEdit, onLogAgain, compact = false }) {
+export default function MealCard({ meal, onClick, onAdd, compact = false }) {
   const meta = getMealMeta(meal.meal_type)
-  const time = meal.created_at
-    ? new Date(meal.created_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
-    : ''
+
+  if (compact) {
+    return (
+      <div
+        onClick={onClick}
+        className="bg-gray-900 rounded-2xl p-3 cursor-pointer active:opacity-80 flex items-center gap-3"
+      >
+        <div className="w-10 h-10 rounded-xl bg-gray-800 flex items-center justify-center text-lg flex-shrink-0">
+          {meal.image_url
+            ? <img src={meal.image_url} alt="" className="w-full h-full rounded-xl object-cover" />
+            : meta.emoji}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-white text-sm font-medium truncate">{meal.description || meta.label}</p>
+          <p className="text-gray-400 text-xs mt-0.5">{meta.label}</p>
+        </div>
+        <span className="text-white font-bold text-sm flex-shrink-0">{meal.calories} kcal</span>
+      </div>
+    )
+  }
 
   return (
     <div
-      className="bg-white rounded-2xl shadow-sm p-3 flex items-center gap-3 cursor-pointer active:bg-gray-50 transition-colors"
+      className="bg-gray-900 rounded-3xl overflow-hidden cursor-pointer active:opacity-90 transition-opacity"
       onClick={onClick}
     >
-      {meal.image_url ? (
-        <img
-          src={meal.image_url}
-          alt={meal.description}
-          className="w-14 h-14 rounded-xl object-cover flex-shrink-0"
-        />
-      ) : (
-        <div className="w-14 h-14 rounded-xl bg-gray-100 flex items-center justify-center text-2xl flex-shrink-0">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 pt-4 pb-3">
+        <span className="text-white font-semibold text-base">{meta.label}</span>
+        <span className="text-white font-bold text-base">{meal.calories} kcal</span>
+      </div>
+
+      {/* Photo */}
+      {meal.image_url && (
+        <div className="px-3 mb-3">
+          <img src={meal.image_url} alt="" className="w-full rounded-2xl object-cover max-h-52" />
+        </div>
+      )}
+
+      {/* No photo + no items: emoji placeholder */}
+      {!meal.image_url && (!meal.items || meal.items.length === 0) && (
+        <div className="mx-3 mb-3 h-20 bg-gray-800 rounded-2xl flex items-center justify-center text-3xl">
           {meta.emoji}
         </div>
       )}
 
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1.5 mb-0.5">
-          <span className="text-xs font-semibold text-green-600">{meta.label}</span>
-          {time && <span className="text-xs text-gray-400">{time}</span>}
+      {/* Items list */}
+      {meal.items?.length > 0 && (
+        <div className="px-4">
+          {meal.items.map((item, i) => (
+            <div
+              key={i}
+              className="flex items-center justify-between py-2.5 border-b border-gray-800 last:border-0"
+            >
+              <span className="text-white text-sm">{item.name}</span>
+              <span className="text-gray-400 text-sm">
+                <span className="text-white font-bold">{item.calories}</span> kcal
+              </span>
+            </div>
+          ))}
         </div>
-        <p className="text-sm text-gray-800 truncate">{meal.description || 'No description'}</p>
-        {!compact && (
-          <p className="text-xs text-gray-500 mt-0.5">
-            {meal.calories} kcal &nbsp;·&nbsp;
-            {Math.round(meal.carbs_g || 0)}C &nbsp;
-            {Math.round(meal.protein_g || 0)}P &nbsp;
-            {Math.round(meal.fats_g || 0)}F
-          </p>
-        )}
-      </div>
+      )}
 
-      <div className="flex items-center gap-0.5 flex-shrink-0">
-        {onLogAgain && (
-          <button
-            onClick={e => { e.stopPropagation(); onLogAgain(meal) }}
-            className="p-2 text-gray-300 hover:text-green-500 transition-colors"
-            aria-label="Log again today"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-            </svg>
-          </button>
-        )}
-        {onEdit && (
-          <button
-            onClick={e => { e.stopPropagation(); onEdit(meal) }}
-            className="p-2 text-gray-300 hover:text-blue-400 transition-colors"
-            aria-label="Edit meal"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-1.414.586H9v-2a2 2 0 01.586-1.414z" />
-            </svg>
-          </button>
-        )}
-        {onDelete && (
-          <button
-            onClick={e => { e.stopPropagation(); onDelete(meal.id) }}
-            className="p-2 text-gray-300 hover:text-red-400 transition-colors"
-            aria-label="Delete meal"
-          >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
-          </button>
-        )}
+      {/* Footer: + Add */}
+      <div className="border-t border-gray-800 mt-2 py-3 flex items-center justify-center">
+        <button
+          className="text-blue-400 text-sm font-medium flex items-center gap-1 px-6 py-1"
+          onClick={e => { e.stopPropagation(); onAdd?.() }}
+        >
+          + Add
+        </button>
       </div>
     </div>
   )
