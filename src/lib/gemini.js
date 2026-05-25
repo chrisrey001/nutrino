@@ -62,6 +62,36 @@ async function callGemini(parts, apiKey) {
   }
 }
 
+async function callGeminiText(parts, apiKey) {
+  const res = await fetch(`${API_BASE}?key=${apiKey}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ contents: [{ parts }] })
+  })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(err?.error?.message || `Gemini error ${res.status}`)
+  }
+  const data = await res.json()
+  return (data.candidates?.[0]?.content?.parts?.[0]?.text ?? '').trim()
+}
+
+export async function generateWeekInsight(weekStats, apiKey) {
+  if (!apiKey) return null
+  const { avgCal, calGoal, avgCarbs, carbsGoal, avgProtein, proteinGoal, avgFats, fatsGoal, daysLogged } = weekStats
+  const prompt = `You are a friendly nutrition coach. Based on this week's food log data, write 2-3 concise sentences of practical insight to help the user understand their habits and one actionable tip. Be specific, not generic.
+
+Data (daily averages):
+- Days logged: ${daysLogged}/7
+- Calories: ${avgCal} kcal (goal: ${calGoal} kcal)
+- Carbs: ${avgCarbs}g (goal: ${carbsGoal}g)
+- Protein: ${avgProtein}g (goal: ${proteinGoal}g)
+- Fats: ${avgFats}g (goal: ${fatsGoal}g)
+
+Write 2-3 plain sentences, no bullet points, no markdown. Start with the most notable pattern.`
+  return callGeminiText([{ text: prompt }], apiKey)
+}
+
 export async function analyzeMeal(imageFile, apiKey) {
   if (!apiKey) throw new Error('No Gemini API key. Add it in Settings.')
   const compressed = await compressImageFile(imageFile)
