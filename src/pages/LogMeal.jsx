@@ -2,7 +2,7 @@ import { useState, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { analyzeMeal } from '../lib/gemini'
 import { supabase } from '../lib/supabase'
-import { HARDCODED_USER_ID, MEAL_TYPES, toLocalDateString, fileToBase64 } from '../lib/utils'
+import { HARDCODED_USER_ID, MEAL_TYPES, toLocalDateString } from '../lib/utils'
 
 const today = toLocalDateString()
 
@@ -47,8 +47,7 @@ export default function LogMeal() {
     setAnalyzing(true)
     setError('')
     try {
-      const base64 = await fileToBase64(imageFile)
-      const data = await analyzeMeal(base64, apiKey)
+      const data = await analyzeMeal(imageFile, apiKey)
       setResult(data)
       setDescription(data.description || '')
       setItems(data.items || [])

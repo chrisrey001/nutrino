@@ -1,3 +1,7 @@
+import { compressImageFile, fileToBase64 } from './utils'
+
+const MODEL = 'gemini-1.5-flash'
+
 const PROMPT = `Analyze this meal photo and estimate the nutritional content.
 
 Return ONLY valid JSON (no markdown, no backticks, no explanation):
@@ -23,18 +27,22 @@ Return ONLY valid JSON (no markdown, no backticks, no explanation):
 
 Be realistic with portions visible in the photo. When uncertain, estimate conservatively. Round to nearest whole number.`
 
-export async function analyzeMeal(base64Image, apiKey) {
+export async function analyzeMeal(imageFile, apiKey) {
   if (!apiKey) throw new Error('No Gemini API key. Add it in Settings.')
 
+  const compressed = await compressImageFile(imageFile)
+  const base64Image = await fileToBase64(compressed)
+  const mimeType = compressed.type || 'image/jpeg'
+
   const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${apiKey}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{
           parts: [
-            { inline_data: { mime_type: 'image/jpeg', data: base64Image } },
+            { inline_data: { mime_type: mimeType, data: base64Image } },
             { text: PROMPT }
           ]
         }]
@@ -44,7 +52,13 @@ export async function analyzeMeal(base64Image, apiKey) {
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}))
-    throw new Error(err?.error?.message || `Gemini error ${res.status}`)
+    const msg = err?.error?.message || `Gemini error ${res.status}`
+    if (msg.toLowerCase().includes('quota') || msg.toLowerCase().includes('limit')) {
+      throw new Error(
+        'Quota exceeded. Go to aistudio.google.com → your project → enable billing (free, just needs a card for identity verification), then retry.'
+      )
+    }
+    throw new Error(msg)
   }
 
   const data = await res.json()
