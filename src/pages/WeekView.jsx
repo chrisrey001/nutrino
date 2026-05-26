@@ -311,7 +311,7 @@ export default function WeekView() {
   }
 
   return (
-    <div className="flex flex-col h-screen max-h-screen bg-white">
+    <div className="min-h-screen bg-white max-w-md mx-auto">
       {/* Sticky header */}
       <div className="bg-white border-b border-gray-100 px-4 pt-10 pb-3 sticky top-0 z-10 shadow-sm">
         <div className="flex items-center justify-between">
@@ -332,8 +332,8 @@ export default function WeekView() {
         </div>
       </div>
 
-      {/* Scrollable content */}
-      <div className="flex-1 overflow-y-auto px-4 pt-4 pb-20 space-y-4 max-w-md mx-auto w-full">
+      {/* Page content */}
+      <div className="px-4 pt-4 pb-24 space-y-4">
         {loading ? (
           <div className="flex items-center justify-center h-48 text-gray-400 text-sm">Loading…</div>
         ) : daysWithMeals === 0 ? (
