@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react'
 import { useProfile } from '../hooks/useProfile'
+import { useToast } from '../components/Toast'
 import NutrinoLogo from '../components/NutrinoLogo'
 
 export default function Settings() {
   const { profile, loading, save } = useProfile()
   const [form, setForm] = useState(profile)
   const [apiKey, setApiKey] = useState('')
-  const [saved, setSaved] = useState(false)
+  const toast = useToast()
 
   useEffect(() => { setForm(profile) }, [profile])
   useEffect(() => {
@@ -26,8 +27,7 @@ export default function Settings() {
       fats_goal_g: parseInt(form.fats_goal_g) || 70,
       dietician_name: form.dietician_name
     })
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
+    toast.show('Settings saved')
   }
 
   if (loading) return <div className="flex items-center justify-center h-screen text-gray-400 text-sm">Loading…</div>
@@ -79,7 +79,7 @@ export default function Settings() {
           onClick={handleSave}
           className="w-full h-12 bg-green-600 text-white rounded-2xl font-semibold text-sm"
         >
-          {saved ? '✓ Saved!' : 'Save Settings'}
+          Save Settings
         </button>
       </div>
     </div>

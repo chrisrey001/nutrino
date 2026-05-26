@@ -2,10 +2,12 @@ import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useMeals } from '../hooks/useMeals'
 import { useProfile } from '../hooks/useProfile'
+import { useToast } from '../components/Toast'
 import MealCard from '../components/MealCard'
 import MealDetailModal from '../components/MealDetailModal'
 import EditMealModal from '../components/EditMealModal'
 import NutrinoLogo from '../components/NutrinoLogo'
+import EmptyState from '../components/EmptyState'
 import { CaloriesCard, MacrosCard } from '../components/DayStats'
 import { sumMacros, toLocalDateString } from '../lib/utils'
 import { supabase } from '../lib/supabase'
@@ -21,8 +23,9 @@ function shiftDate(dateStr, days) {
 export default function DayDetail() {
   const { date } = useParams()
   const navigate = useNavigate()
-  const { meals, loading, refresh } = useMeals(date)
+  const { meals, loading, error, refresh } = useMeals(date)
   const { profile } = useProfile()
+  const toast = useToast()
   const totals = sumMacros(meals)
   const [viewingMeal, setViewingMeal] = useState(null)
   const [editingMeal, setEditingMeal] = useState(null)
@@ -34,9 +37,17 @@ export default function DayDetail() {
     ? 'TODAY'
     : new Date(date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }).toUpperCase()
 
-  const handleDelete = async (id) => {
-    await supabase.from('meals').delete().eq('id', id)
+  const handleDelete = async (meal) => {
+    await supabase.from('meals').delete().eq('id', meal.id)
     refresh()
+    toast.show('Meal deleted', {
+      actionLabel: 'Undo',
+      onAction: async () => {
+        const { id, created_at, updated_at, ...rest } = meal
+        await supabase.from('meals').insert({ ...rest, id, created_at })
+        refresh()
+      }
+    })
   }
 
   const handleLogAgain = (meal) => {
@@ -83,13 +94,17 @@ export default function DayDetail() {
           fats={totals.fats_g} fatsGoal={profile.fats_goal_g}
         />
 
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
+            <p className="text-sm text-red-700 flex-1">Failed to load meals</p>
+            <button onClick={refresh} className="text-xs font-semibold text-red-600 underline flex-shrink-0">Retry</button>
+          </div>
+        )}
+
         {loading ? (
           <div className="flex items-center justify-center h-32 text-gray-400 text-sm">Loading…</div>
         ) : meals.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-40 text-center">
-            <span className="text-4xl mb-3">🍽️</span>
-            <p className="text-gray-500 text-sm">No meals logged for this day</p>
-          </div>
+          <EmptyState icon="🍽️" title="No meals logged for this day" />
         ) : (
           <div className="space-y-3">
             {meals.map(meal => (
@@ -109,7 +124,7 @@ export default function DayDetail() {
           meal={viewingMeal}
           onClose={() => setViewingMeal(null)}
           onEdit={meal => { setViewingMeal(null); setEditingMeal(meal) }}
-          onDelete={id => { handleDelete(id); setViewingMeal(null) }}
+          onDelete={meal => { handleDelete(meal); setViewingMeal(null) }}
           onLogAgain={!isToday ? handleLogAgain : undefined}
         />
       )}

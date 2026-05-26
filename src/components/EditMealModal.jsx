@@ -1,10 +1,13 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { MEAL_TYPES } from '../lib/utils'
+import { MEAL_TYPES, sumMacros } from '../lib/utils'
+import { analyzeMealText } from '../lib/gemini'
+import { useModalBehavior } from '../hooks/useModalBehavior'
 
 export default function EditMealModal({ meal, onClose, onSaved }) {
   const [mealType, setMealType] = useState(meal.meal_type)
   const [description, setDescription] = useState(meal.description || '')
+  const [items, setItems] = useState(meal.items || [])
   const [calories, setCalories] = useState(String(meal.calories || ''))
   const [carbs, setCarbs] = useState(String(meal.carbs_g || ''))
   const [protein, setProtein] = useState(String(meal.protein_g || ''))
@@ -15,11 +18,57 @@ export default function EditMealModal({ meal, onClose, onSaved }) {
   })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [newItemText, setNewItemText] = useState('')
+  const [addingItem, setAddingItem] = useState(false)
+  const [addError, setAddError] = useState('')
 
-  useEffect(() => {
-    document.body.style.overflow = 'hidden'
-    return () => { document.body.style.overflow = '' }
-  }, [])
+  const sheetRef = useModalBehavior(onClose)
+
+  const recalcFromItems = (updatedItems) => {
+    const totals = sumMacros(updatedItems)
+    setCalories(String(totals.calories))
+    setCarbs(String(Math.round(totals.carbs_g)))
+    setProtein(String(Math.round(totals.protein_g)))
+    setFats(String(Math.round(totals.fats_g)))
+  }
+
+  const removeItem = (index) => {
+    const updated = items.filter((_, i) => i !== index)
+    setItems(updated)
+    recalcFromItems(updated)
+  }
+
+  const handleAddItem = async () => {
+    if (!newItemText.trim()) return
+    const apiKey = localStorage.getItem('gemini_api_key')
+    if (!apiKey) {
+      setAddError('No Gemini API key. Add it in Settings.')
+      return
+    }
+    setAddingItem(true)
+    setAddError('')
+    try {
+      const result = await analyzeMealText(newItemText, apiKey)
+      const newItems = result.items?.length
+        ? result.items
+        : [{
+            name: newItemText,
+            estimated_portion: '',
+            calories: result.total_calories || 0,
+            carbs_g: result.total_carbs_g || 0,
+            protein_g: result.total_protein_g || 0,
+            fats_g: result.total_fats_g || 0
+          }]
+      const updated = [...items, ...newItems]
+      setItems(updated)
+      recalcFromItems(updated)
+      setNewItemText('')
+    } catch (err) {
+      setAddError(err.message)
+    } finally {
+      setAddingItem(false)
+    }
+  }
 
   const handleSave = async () => {
     setSaving(true)
@@ -32,10 +81,11 @@ export default function EditMealModal({ meal, onClose, onSaved }) {
       const { error: err } = await supabase.from('meals').update({
         meal_type: mealType,
         description,
-        calories: parseInt(calories) || 0,
-        carbs_g: parseFloat(carbs) || 0,
-        protein_g: parseFloat(protein) || 0,
-        fats_g: parseFloat(fats) || 0,
+        calories: Math.max(0, parseInt(calories) || 0),
+        carbs_g: Math.max(0, parseFloat(carbs) || 0),
+        protein_g: Math.max(0, parseFloat(protein) || 0),
+        fats_g: Math.max(0, parseFloat(fats) || 0),
+        items,
         created_at: newCreatedAt.toISOString(),
         updated_at: new Date().toISOString()
       }).eq('id', meal.id)
@@ -56,7 +106,9 @@ export default function EditMealModal({ meal, onClose, onSaved }) {
 
       {/* Sheet */}
       <div
-        className="relative bg-white rounded-t-3xl px-4 pt-5 pb-10 space-y-4 max-h-[90vh] overflow-y-auto"
+        ref={sheetRef}
+        tabIndex={-1}
+        className="relative bg-white rounded-t-3xl px-4 pt-5 pb-10 space-y-4 max-h-[90vh] overflow-y-auto outline-none"
         onClick={e => e.stopPropagation()}
       >
         {/* Handle */}
@@ -111,6 +163,58 @@ export default function EditMealModal({ meal, onClose, onSaved }) {
           />
         </div>
 
+        {/* Items */}
+        <div>
+          <label className="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-2">Items</label>
+          {items.length > 0 ? (
+            <div className="space-y-2 mb-3">
+              {items.map((item, i) => (
+                <div key={i} className="flex items-center justify-between bg-gray-50 rounded-xl px-3 py-2 gap-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-gray-800 truncate">{item.name}</p>
+                    <p className="text-xs text-gray-400">{item.calories} kcal</p>
+                  </div>
+                  <button
+                    onClick={() => removeItem(i)}
+                    className="w-6 h-6 flex items-center justify-center text-gray-400 hover:text-red-500 flex-shrink-0"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-gray-400 mb-3">No items — add one below</p>
+          )}
+
+          {/* Add item */}
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={newItemText}
+              onChange={e => { setNewItemText(e.target.value); setAddError('') }}
+              onKeyDown={e => e.key === 'Enter' && handleAddItem()}
+              placeholder="e.g. 1 piece of cod"
+              className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
+            />
+            <button
+              onClick={handleAddItem}
+              disabled={addingItem || !newItemText.trim()}
+              className="h-10 px-4 bg-green-600 text-white rounded-xl text-sm font-semibold disabled:opacity-50 flex items-center gap-1.5"
+            >
+              {addingItem ? (
+                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                </svg>
+              ) : 'Add'}
+            </button>
+          </div>
+          {addError && <p className="text-xs text-red-600 mt-1">{addError}</p>}
+        </div>
+
         {/* Macros */}
         <div>
           <label className="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-2">Nutrition</label>
@@ -125,6 +229,7 @@ export default function EditMealModal({ meal, onClose, onSaved }) {
                 <label className="text-xs text-gray-400 block mb-1">{label}</label>
                 <input
                   type="number"
+                  min="0"
                   value={value}
                   onChange={e => set(e.target.value)}
                   className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"

@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useCallback } from 'react'
 import { useMealsRange } from '../hooks/useMealsRange'
 import { useProfile } from '../hooks/useProfile'
 import NutrinoLogo from '../components/NutrinoLogo'
+import EmptyState from '../components/EmptyState'
 import { getWeekDates, sumMacros, toLocalDateString, generateWeeklyNote, formatTime } from '../lib/utils'
 import { generateWeeklyPDF } from '../lib/pdf'
 import { generateWeekInsight } from '../lib/gemini'
@@ -194,7 +195,7 @@ export default function WeekView() {
   }, [weekOffset])
 
   const weekDates = useMemo(() => getWeekDates(refDate), [refDate])
-  const { mealsByDate, loading } = useMealsRange(weekDates)
+  const { mealsByDate, loading, error } = useMealsRange(weekDates)
 
   const prevWeekDates = useMemo(() => {
     const d = new Date()
@@ -349,14 +350,16 @@ export default function WeekView() {
 
       {/* Page content */}
       <div className="px-4 pt-4 pb-24 space-y-4">
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
+            <p className="text-sm text-red-700 flex-1">Failed to load week data</p>
+            <button onClick={() => window.location.reload()} className="text-xs font-semibold text-red-600 underline flex-shrink-0">Retry</button>
+          </div>
+        )}
         {loading ? (
           <div className="flex items-center justify-center h-48 text-gray-400 text-sm">Loading…</div>
         ) : daysWithMeals === 0 ? (
-          <div className="flex flex-col items-center justify-center h-64 text-center">
-            <span className="text-4xl mb-3">📊</span>
-            <p className="text-gray-500 text-sm font-medium">No meals logged this week</p>
-            <p className="text-gray-400 text-xs mt-1">Start logging to see your trends</p>
-          </div>
+          <EmptyState icon="📊" title="No meals logged this week" hint="Start logging to see your trends" />
         ) : (
           <>
             {/* AI Insight */}

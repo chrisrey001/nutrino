@@ -39,41 +39,76 @@ ${SCHEMA}
 
 Use typical restaurant or home-cooked portion sizes unless specified. When uncertain, estimate conservatively. Round to nearest whole number.`
 
-async function callGemini(parts, apiKey) {
-  const res = await fetch(`${API_BASE}?key=${apiKey}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ contents: [{ parts }] })
-  })
-
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}))
-    const msg = err?.error?.message || `Gemini error ${res.status}`
-    throw new Error(msg)
+async function withRetry(fn, attempts = 3) {
+  let lastErr
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await fn()
+    } catch (err) {
+      lastErr = err
+      const isRetryable = err.status === 429 || err.status >= 500 || err.name === 'TypeError'
+      if (!isRetryable) throw err
+      if (i < attempts - 1) await new Promise(r => setTimeout(r, 1000 * Math.pow(2, i)))
+    }
   }
+  throw lastErr
+}
 
-  const data = await res.json()
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+function extractJSON(text) {
   const cleaned = text.replace(/```json|```/g, '').trim()
   try {
     return JSON.parse(cleaned)
   } catch {
+    const match = cleaned.match(/\{[\s\S]*\}/)
+    if (match) {
+      try { return JSON.parse(match[0]) } catch {}
+    }
     throw new Error('Gemini returned invalid JSON. Try again.')
   }
 }
 
-async function callGeminiText(parts, apiKey) {
-  const res = await fetch(`${API_BASE}?key=${apiKey}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ contents: [{ parts }] })
-  })
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}))
-    throw new Error(err?.error?.message || `Gemini error ${res.status}`)
+async function callGemini(parts, apiKey) {
+  const doFetch = async () => {
+    const res = await fetch(`${API_BASE}?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts }] })
+    })
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      const msg = err?.error?.message || `Gemini error ${res.status}`
+      const e = new Error(msg)
+      e.status = res.status
+      throw e
+    }
+
+    const data = await res.json()
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+    return extractJSON(text)
   }
-  const data = await res.json()
-  return (data.candidates?.[0]?.content?.parts?.[0]?.text ?? '').trim()
+
+  return withRetry(doFetch)
+}
+
+async function callGeminiText(parts, apiKey) {
+  const doFetch = async () => {
+    const res = await fetch(`${API_BASE}?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contents: [{ parts }] })
+    })
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}))
+      const e = new Error(err?.error?.message || `Gemini error ${res.status}`)
+      e.status = res.status
+      throw e
+    }
+    const data = await res.json()
+    return (data.candidates?.[0]?.content?.parts?.[0]?.text ?? '').trim()
+  }
+
+  return withRetry(doFetch)
 }
 
 export async function generateWeekInsight(weekStats, apiKey) {
