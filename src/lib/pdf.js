@@ -218,13 +218,14 @@ export async function generateWeeklyPDF(weekDates, mealsByDate, profile) {
   el.style.left = '-9999px'
   document.body.appendChild(el)
 
-  await html2pdf().set({
+  const blob = await html2pdf().set({
     margin: [10, 10],
     filename: `nutrino-week-${weekStart}.pdf`,
     image: { type: 'jpeg', quality: 0.85 },
     html2canvas: { scale: 2, useCORS: true, logging: false },
     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-  }).from(el).save()
+  }).from(el).outputPdf('blob')
 
   document.body.removeChild(el)
+  return { blob, filename: `nutrino-week-${weekStart}.pdf` }
 }
