@@ -5,6 +5,7 @@ import { useProfile } from '../hooks/useProfile'
 import MealCard from '../components/MealCard'
 import MealDetailModal from '../components/MealDetailModal'
 import EditMealModal from '../components/EditMealModal'
+import NutrinoLogo from '../components/NutrinoLogo'
 import { CaloriesCard, MacrosCard } from '../components/DayStats'
 import { toLocalDateString, sumMacros } from '../lib/utils'
 import { supabase } from '../lib/supabase'
@@ -31,11 +32,11 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-white max-w-md mx-auto">
       {/* Header */}
-      <div className="bg-white sticky top-0 z-10 px-4 pt-12 pb-3 border-b border-gray-100 shadow-sm">
+      <div className="bg-white sticky top-0 z-10 px-4 pt-10 pb-3 border-b border-gray-100 shadow-sm">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Today</p>
-            <p className="text-sm font-semibold text-gray-900">{dayLabel}</p>
+            <NutrinoLogo />
+            <p className="text-xs text-gray-500 mt-0.5">{dayLabel}</p>
           </div>
           <div className="flex items-center gap-1.5 bg-gray-900 text-white px-4 py-2 rounded-2xl">
             <span className="text-sm font-bold">TODAY</span>

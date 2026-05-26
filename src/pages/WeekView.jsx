@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useCallback } from 'react'
 import { useMealsRange } from '../hooks/useMealsRange'
 import { useProfile } from '../hooks/useProfile'
+import NutrinoLogo from '../components/NutrinoLogo'
 import { getWeekDates, sumMacros, toLocalDateString, generateWeeklyNote, formatTime } from '../lib/utils'
 import { generateWeeklyPDF } from '../lib/pdf'
 import { generateWeekInsight } from '../lib/gemini'
@@ -312,7 +313,7 @@ export default function WeekView() {
   return (
     <div className="flex flex-col h-screen max-h-screen bg-white">
       {/* Sticky header */}
-      <div className="bg-white border-b border-gray-100 px-4 pt-12 pb-4 sticky top-0 z-10 shadow-sm">
+      <div className="bg-white border-b border-gray-100 px-4 pt-10 pb-3 sticky top-0 z-10 shadow-sm">
         <div className="flex items-center justify-between">
           <button onClick={() => { setWeekOffset(o => o - 1); setAiInsight(null); setInsightLoading(false) }} className="p-2 text-gray-500 active:text-green-600">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -320,8 +321,8 @@ export default function WeekView() {
             </svg>
           </button>
           <div className="text-center">
-            <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Week of</p>
-            <p className="text-sm font-semibold text-gray-900">{weekLabel}</p>
+            <NutrinoLogo className="justify-center" />
+            <p className="text-xs text-gray-500 mt-0.5">{weekLabel}</p>
           </div>
           <button onClick={() => { setWeekOffset(o => o + 1); setAiInsight(null); setInsightLoading(false) }} disabled={weekOffset >= 0} className="p-2 text-gray-500 active:text-green-600 disabled:opacity-30">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -332,7 +333,7 @@ export default function WeekView() {
       </div>
 
       {/* Scrollable content */}
-      <div className="flex-1 overflow-y-auto px-4 pt-4 pb-8 space-y-4 max-w-md mx-auto w-full">
+      <div className="flex-1 overflow-y-auto px-4 pt-4 pb-20 space-y-4 max-w-md mx-auto w-full">
         {loading ? (
           <div className="flex items-center justify-center h-48 text-gray-400 text-sm">Loading…</div>
         ) : daysWithMeals === 0 ? (

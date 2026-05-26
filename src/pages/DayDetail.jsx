@@ -5,6 +5,7 @@ import { useProfile } from '../hooks/useProfile'
 import MealCard from '../components/MealCard'
 import MealDetailModal from '../components/MealDetailModal'
 import EditMealModal from '../components/EditMealModal'
+import NutrinoLogo from '../components/NutrinoLogo'
 import { CaloriesCard, MacrosCard } from '../components/DayStats'
 import { sumMacros, toLocalDateString } from '../lib/utils'
 import { supabase } from '../lib/supabase'
@@ -45,7 +46,7 @@ export default function DayDetail() {
   return (
     <div className="min-h-screen bg-white max-w-md mx-auto">
       {/* Sticky date nav */}
-      <div className="bg-white sticky top-0 z-10 px-4 pt-12 pb-3 border-b border-gray-100 shadow-sm">
+      <div className="bg-white sticky top-0 z-10 px-4 pt-10 pb-3 border-b border-gray-100 shadow-sm">
         <div className="flex items-center justify-between">
           <button
             onClick={() => navigate(`/day/${shiftDate(date, -1)}`)}
@@ -56,15 +57,10 @@ export default function DayDetail() {
             </svg>
           </button>
 
-          <button
-            onClick={() => navigate(-1)}
-            className="flex items-center gap-2 bg-gray-900 text-white px-6 py-2.5 rounded-2xl font-bold text-sm tracking-wide"
-          >
-            {dayLabel}
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-          </button>
+          <div className="text-center">
+            <NutrinoLogo className="justify-center" />
+            <p className="text-xs text-gray-500 mt-0.5">{dayLabel}</p>
+          </div>
 
           <button
             onClick={() => canGoNext && navigate(`/day/${shiftDate(date, 1)}`)}

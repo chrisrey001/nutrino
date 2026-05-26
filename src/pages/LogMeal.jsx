@@ -2,6 +2,7 @@ import { useState, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { analyzeMeal, analyzeMealText } from '../lib/gemini'
 import { supabase } from '../lib/supabase'
+import NutrinoLogo from '../components/NutrinoLogo'
 import { HARDCODED_USER_ID, MEAL_TYPES, toLocalDateString } from '../lib/utils'
 
 const today = toLocalDateString()
@@ -129,13 +130,13 @@ export default function LogMeal() {
   return (
     <div className="min-h-screen bg-gray-50 max-w-md mx-auto">
       {/* Header */}
-      <div className="bg-white border-b border-gray-100 px-4 pt-12 pb-4 flex items-center gap-3">
+      <div className="bg-white border-b border-gray-100 px-4 pt-10 pb-4 flex items-center gap-3">
         <button onClick={() => navigate(-1)} className="p-1 -ml-1 text-gray-500">
           <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
           </svg>
         </button>
-        <h1 className="text-lg font-semibold text-gray-900">Log Meal</h1>
+        <NutrinoLogo />
       </div>
 
       <div className="px-4 py-4 space-y-4 pb-24">
