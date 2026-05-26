@@ -1,3 +1,4 @@
+import html2pdf from 'html2pdf.js'
 import { formatDate, formatShortDate, sumMacros, generateDailyNote, generateWeeklyNote, getMealMeta } from './utils'
 
 // --- Utilities ---
@@ -374,8 +375,6 @@ async function buildDailySectionHTML(date, meals, goals, imageCache) {
 // --- Main Export ---
 
 export async function generateWeeklyPDF(weekDates, mealsByDate, profile) {
-  const html2pdf = (await import('html2pdf.js')).default
-
   const goals = {
     calorie_goal: profile.calorie_goal || 2100,
     carbs_goal_g: profile.carbs_goal_g || 131,
@@ -436,9 +435,10 @@ export async function generateWeeklyPDF(weekDates, mealsByDate, profile) {
     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
   }).from(el)
 
-  await worker.toPdf()
-  const pdf = await worker.get('pdf')
-  const blob = pdf.output('blob')
+  let blob
+  await worker.toPdf().get('pdf').then(function (pdf) {
+    blob = pdf.output('blob')
+  })
 
   document.body.removeChild(el)
   return { blob, filename }
