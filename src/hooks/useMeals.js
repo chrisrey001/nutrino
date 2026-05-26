@@ -5,39 +5,46 @@ import { HARDCODED_USER_ID } from '../lib/utils'
 export function useMeals(date) {
   const [meals, setMeals] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   const fetch = useCallback(async () => {
     if (!date) return
     setLoading(true)
-    const { data } = await supabase
+    setError(null)
+    const { data, error: err } = await supabase
       .from('meals')
       .select('*')
       .eq('user_id', HARDCODED_USER_ID)
       .eq('date', date)
       .order('created_at', { ascending: true })
+    if (err) setError(err.message)
     setMeals(data || [])
     setLoading(false)
   }, [date])
 
   useEffect(() => { fetch() }, [fetch])
 
-  return { meals, loading, refresh: fetch }
+  return { meals, loading, error, refresh: fetch }
 }
 
 export function useMealsRange(dates) {
   const [mealsByDate, setMealsByDate] = useState({})
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   const fetch = useCallback(async () => {
     if (!dates?.length) return
     setLoading(true)
-    const { data } = await supabase
+    setError(null)
+    const { data, error: err } = await supabase
       .from('meals')
       .select('*')
       .eq('user_id', HARDCODED_USER_ID)
       .gte('date', dates[0])
       .lte('date', dates[dates.length - 1])
       .order('created_at', { ascending: true })
+
+    if (err) setError(err.message)
 
     const byDate = {}
     for (const d of dates) byDate[d] = []
@@ -51,5 +58,5 @@ export function useMealsRange(dates) {
 
   useEffect(() => { fetch() }, [fetch])
 
-  return { mealsByDate, loading, refresh: fetch }
+  return { mealsByDate, loading, error, refresh: fetch }
 }

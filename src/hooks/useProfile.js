@@ -15,13 +15,16 @@ const DEFAULT_PROFILE = {
 export function useProfile() {
   const [profile, setProfile] = useState(DEFAULT_PROFILE)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   const fetch = useCallback(async () => {
-    const { data } = await supabase
+    setError(null)
+    const { data, error: err } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', HARDCODED_USER_ID)
       .single()
+    if (err && err.code !== 'PGRST116') setError(err.message)
     if (data) setProfile(data)
     setLoading(false)
   }, [])
@@ -38,5 +41,5 @@ export function useProfile() {
     return data
   }
 
-  return { profile, loading, save, refresh: fetch }
+  return { profile, loading, error, save, refresh: fetch }
 }

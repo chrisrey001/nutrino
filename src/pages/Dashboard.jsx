@@ -2,27 +2,51 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMeals } from '../hooks/useMeals'
 import { useProfile } from '../hooks/useProfile'
+import { useRecentMeals } from '../hooks/useRecentMeals'
+import { useToast } from '../components/Toast'
 import MealCard from '../components/MealCard'
 import MealDetailModal from '../components/MealDetailModal'
 import EditMealModal from '../components/EditMealModal'
 import NutrinoLogo from '../components/NutrinoLogo'
+import EmptyState from '../components/EmptyState'
 import { CaloriesCard, MacrosCard } from '../components/DayStats'
-import { toLocalDateString, sumMacros } from '../lib/utils'
+import { toLocalDateString, sumMacros, getMealMeta } from '../lib/utils'
 import { supabase } from '../lib/supabase'
+import { quickLogMeal } from '../lib/meals'
 
 const today = toLocalDateString()
 
 export default function Dashboard() {
-  const { meals, loading, refresh } = useMeals(today)
+  const { meals, loading, error, refresh } = useMeals(today)
   const { profile } = useProfile()
+  const recentMeals = useRecentMeals()
   const navigate = useNavigate()
+  const toast = useToast()
   const totals = sumMacros(meals)
   const [viewingMeal, setViewingMeal] = useState(null)
   const [editingMeal, setEditingMeal] = useState(null)
 
-  const handleDelete = async (id) => {
-    await supabase.from('meals').delete().eq('id', id)
+  const handleDelete = async (meal) => {
+    await supabase.from('meals').delete().eq('id', meal.id)
     refresh()
+    toast.show('Meal deleted', {
+      actionLabel: 'Undo',
+      onAction: async () => {
+        const { id, created_at, updated_at, ...rest } = meal
+        await supabase.from('meals').insert({ ...rest, id, created_at })
+        refresh()
+      }
+    })
+  }
+
+  const handleQuickLog = async (meal) => {
+    try {
+      await quickLogMeal(meal)
+      refresh()
+      toast.show('Added to today')
+    } catch (err) {
+      toast.show('Failed to add meal')
+    }
   }
 
   const dayLabel = new Date(today + 'T12:00:00').toLocaleDateString('en-US', {
@@ -56,14 +80,41 @@ export default function Dashboard() {
           fats={totals.fats_g} fatsGoal={profile.fats_goal_g}
         />
 
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 flex items-center justify-between gap-3">
+            <p className="text-sm text-red-700 flex-1">Failed to load meals</p>
+            <button onClick={refresh} className="text-xs font-semibold text-red-600 underline flex-shrink-0">Retry</button>
+          </div>
+        )}
+
+        {/* Quick Log strip */}
+        {recentMeals.length > 0 && (
+          <div>
+            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Quick Log</p>
+            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none -mx-4 px-4">
+              {recentMeals.map((meal, i) => {
+                const meta = getMealMeta(meal.meal_type)
+                return (
+                  <button
+                    key={i}
+                    onClick={() => handleQuickLog(meal)}
+                    className="flex-shrink-0 bg-gray-50 border border-gray-100 rounded-2xl px-3 py-2 text-left active:bg-gray-100 transition-colors"
+                  >
+                    <div className="text-sm font-medium text-gray-800 whitespace-nowrap max-w-[140px] truncate">
+                      {meta.emoji} {meal.description}
+                    </div>
+                    <div className="text-xs text-gray-400 mt-0.5">{meal.calories} kcal</div>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
         {loading ? (
           <div className="flex items-center justify-center h-32 text-gray-400 text-sm">Loading…</div>
         ) : meals.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-40 text-center">
-            <span className="text-4xl mb-3">🍽️</span>
-            <p className="text-gray-500 text-sm">No meals logged yet</p>
-            <p className="text-gray-400 text-xs mt-1">Tap + to log your first meal</p>
-          </div>
+          <EmptyState icon="🍽️" title="No meals logged yet" hint="Tap + to log your first meal" />
         ) : (
           <div className="space-y-3">
             {meals.map(meal => (
@@ -94,7 +145,7 @@ export default function Dashboard() {
           meal={viewingMeal}
           onClose={() => setViewingMeal(null)}
           onEdit={meal => { setViewingMeal(null); setEditingMeal(meal) }}
-          onDelete={id => { handleDelete(id); setViewingMeal(null) }}
+          onDelete={meal => { handleDelete(meal); setViewingMeal(null) }}
         />
       )}
 

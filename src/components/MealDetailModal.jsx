@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { getMealMeta } from '../lib/utils'
+import { useModalBehavior } from '../hooks/useModalBehavior'
 
 const DISMISS_THRESHOLD = 140 // px down before auto-dismiss
 const VELOCITY_THRESHOLD = 0.5 // px/ms — fast flick dismisses even if short drag
@@ -54,10 +55,7 @@ export default function MealDetailModal({ meal, onClose, onEdit, onDelete, onLog
   const startY = useRef(0)
   const startTime = useRef(0)
 
-  useEffect(() => {
-    document.body.style.overflow = 'hidden'
-    return () => { document.body.style.overflow = '' }
-  }, [])
+  useModalBehavior(onClose)
 
   const onDragStart = (e) => {
     startY.current = e.touches[0].clientY
@@ -220,7 +218,7 @@ export default function MealDetailModal({ meal, onClose, onEdit, onDelete, onLog
           )}
           {onDelete && (
             <button
-              onClick={() => { onDelete(meal.id); onClose() }}
+              onClick={() => { onDelete(meal); onClose() }}
               className="w-full h-12 rounded-2xl text-sm font-semibold text-red-500 bg-red-50 active:bg-red-100 transition-colors"
             >
               Delete Meal

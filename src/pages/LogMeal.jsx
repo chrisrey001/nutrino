@@ -109,10 +109,10 @@ export default function LogMeal() {
         meal_type: mealType,
         description,
         image_url,
-        calories: parseInt(calories) || 0,
-        carbs_g: parseFloat(carbs) || 0,
-        protein_g: parseFloat(protein) || 0,
-        fats_g: parseFloat(fats) || 0,
+        calories: Math.max(0, parseInt(calories) || 0),
+        carbs_g: Math.max(0, parseFloat(carbs) || 0),
+        protein_g: Math.max(0, parseFloat(protein) || 0),
+        fats_g: Math.max(0, parseFloat(fats) || 0),
         items,
         ai_raw_response: result
       })
@@ -289,6 +289,7 @@ export default function LogMeal() {
                     <label className="text-xs text-gray-400 block mb-1">{label}</label>
                     <input
                       type="number"
+                      min="0"
                       value={value}
                       onChange={e => set(e.target.value)}
                       className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
