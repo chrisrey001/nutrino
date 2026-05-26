@@ -138,7 +138,7 @@ export default function LogMeal() {
         <h1 className="text-lg font-semibold text-gray-900">Log Meal</h1>
       </div>
 
-      <div className="px-4 py-4 space-y-4 pb-8">
+      <div className="px-4 py-4 space-y-4 pb-24">
         {/* Meal type */}
         <div>
           <label className="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-2">Meal Type</label>

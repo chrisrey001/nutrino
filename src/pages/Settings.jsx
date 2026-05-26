@@ -32,7 +32,7 @@ export default function Settings() {
   if (loading) return <div className="flex items-center justify-center h-screen text-gray-400 text-sm">Loading…</div>
 
   return (
-    <div className="px-4 pt-12 pb-8 max-w-md mx-auto">
+    <div className="px-4 pt-12 pb-24 max-w-md mx-auto">
       <h1 className="text-xl font-bold text-gray-900 mb-6">Settings</h1>
 
       <div className="space-y-6">
