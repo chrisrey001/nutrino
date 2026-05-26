@@ -54,11 +54,19 @@ export function sumMacros(meals) {
   )
 }
 
-export function macroBarColor(eaten, goal) {
+export function macroBarColor(eaten, goal, color = 'bg-green-500') {
   const pct = goal > 0 ? eaten / goal : 0
   if (pct > 1.25) return 'bg-red-500'
   if (pct > 1.1) return 'bg-amber-500'
-  return 'bg-green-500'
+  return color
+}
+
+export function formatTime(isoString) {
+  if (!isoString) return ''
+  const d = new Date(isoString)
+  const h = d.getHours(), m = d.getMinutes()
+  const ampm = h >= 12 ? 'pm' : 'am'
+  return `${h % 12 || 12}:${String(m).padStart(2, '0')}${ampm}`
 }
 
 export function generateDailyNote(totals, goals) {
@@ -108,5 +116,28 @@ export function fileToBase64(file) {
     reader.onload = () => resolve(reader.result.split(',')[1])
     reader.onerror = reject
     reader.readAsDataURL(file)
+  })
+}
+
+export function compressImageFile(file, maxDimension = 1024, quality = 0.75) {
+  return new Promise((resolve) => {
+    const img = new Image()
+    const url = URL.createObjectURL(file)
+    img.onload = () => {
+      URL.revokeObjectURL(url)
+      const { naturalWidth: w, naturalHeight: h } = img
+      const scale = Math.min(1, maxDimension / Math.max(w, h))
+      const canvas = document.createElement('canvas')
+      canvas.width = Math.round(w * scale)
+      canvas.height = Math.round(h * scale)
+      canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height)
+      canvas.toBlob(
+        (blob) => resolve(blob ? new File([blob], file.name, { type: 'image/jpeg' }) : file),
+        'image/jpeg',
+        quality
+      )
+    }
+    img.onerror = () => { URL.revokeObjectURL(url); resolve(file) }
+    img.src = url
   })
 }

@@ -1,10 +1,22 @@
+import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useMeals } from '../hooks/useMeals'
 import { useProfile } from '../hooks/useProfile'
-import MacroBar from '../components/MacroBar'
 import MealCard from '../components/MealCard'
-import { sumMacros, formatDate } from '../lib/utils'
+import MealDetailModal from '../components/MealDetailModal'
+import EditMealModal from '../components/EditMealModal'
+import NutrinoLogo from '../components/NutrinoLogo'
+import { CaloriesCard, MacrosCard } from '../components/DayStats'
+import { sumMacros, toLocalDateString } from '../lib/utils'
 import { supabase } from '../lib/supabase'
+
+const todayStr = toLocalDateString()
+
+function shiftDate(dateStr, days) {
+  const d = new Date(dateStr + 'T12:00:00')
+  d.setDate(d.getDate() + days)
+  return toLocalDateString(d)
+}
 
 export default function DayDetail() {
   const { date } = useParams()
@@ -12,42 +24,65 @@ export default function DayDetail() {
   const { meals, loading, refresh } = useMeals(date)
   const { profile } = useProfile()
   const totals = sumMacros(meals)
+  const [viewingMeal, setViewingMeal] = useState(null)
+  const [editingMeal, setEditingMeal] = useState(null)
+
+  const isToday = date === todayStr
+  const canGoNext = date < todayStr
+
+  const dayLabel = isToday
+    ? 'TODAY'
+    : new Date(date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }).toUpperCase()
 
   const handleDelete = async (id) => {
     await supabase.from('meals').delete().eq('id', id)
     refresh()
   }
 
+  const handleLogAgain = (meal) => {
+    navigate(`/log?type=${meal.meal_type}&desc=${encodeURIComponent(meal.description || '')}`)
+  }
+
   return (
-    <div className="flex flex-col h-screen max-h-screen">
-      {/* Sticky header */}
-      <div className="bg-white border-b border-gray-100 px-4 pt-12 pb-4 sticky top-0 z-10 shadow-sm">
-        <div className="flex items-center gap-3 mb-3">
-          <button onClick={() => navigate(-1)} className="p-1 -ml-1 text-gray-500">
-            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+    <div className="min-h-screen bg-white max-w-md mx-auto">
+      {/* Sticky date nav */}
+      <div className="bg-white sticky top-0 z-10 px-4 pt-10 pb-3 border-b border-gray-100 shadow-sm">
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => navigate(`/day/${shiftDate(date, -1)}`)}
+            className="w-10 h-10 flex items-center justify-center bg-gray-100 rounded-2xl text-gray-600 active:bg-gray-200 transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-          <div>
-            <p className="text-xs font-medium text-gray-400 uppercase tracking-wide">Daily Detail</p>
-            <h1 className="text-base font-semibold text-gray-900">{formatDate(date)}</h1>
+
+          <div className="text-center">
+            <NutrinoLogo className="justify-center" />
+            <p className="text-xs text-gray-500 mt-0.5">{dayLabel}</p>
           </div>
-        </div>
 
-        <div className="flex items-baseline gap-1 mb-3">
-          <span className="text-3xl font-bold text-gray-900">{totals.calories}</span>
-          <span className="text-base text-gray-400">/ {profile.calorie_goal} kcal</span>
-        </div>
-
-        <div className="space-y-2">
-          <MacroBar label="Carbs" eaten={totals.carbs_g} goal={profile.carbs_goal_g} />
-          <MacroBar label="Protein" eaten={totals.protein_g} goal={profile.protein_goal_g} />
-          <MacroBar label="Fat" eaten={totals.fats_g} goal={profile.fats_goal_g} />
+          <button
+            onClick={() => canGoNext && navigate(`/day/${shiftDate(date, 1)}`)}
+            disabled={!canGoNext}
+            className="w-10 h-10 flex items-center justify-center bg-gray-100 rounded-2xl text-gray-600 active:bg-gray-200 transition-colors disabled:opacity-30"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
         </div>
       </div>
 
-      {/* Scrollable meal list */}
-      <div className="flex-1 overflow-y-auto px-4 pt-4 pb-6">
+      {/* Scrollable content */}
+      <div className="px-4 pt-4 pb-28 space-y-4">
+        <CaloriesCard eaten={totals.calories} goal={profile.calorie_goal} />
+        <MacrosCard
+          carbs={totals.carbs_g} carbsGoal={profile.carbs_goal_g}
+          protein={totals.protein_g} proteinGoal={profile.protein_goal_g}
+          fats={totals.fats_g} fatsGoal={profile.fats_goal_g}
+        />
+
         {loading ? (
           <div className="flex items-center justify-center h-32 text-gray-400 text-sm">Loading…</div>
         ) : meals.length === 0 ? (
@@ -58,23 +93,34 @@ export default function DayDetail() {
         ) : (
           <div className="space-y-3">
             {meals.map(meal => (
-              <div key={meal.id}>
-                <MealCard meal={meal} onDelete={handleDelete} onClick={() => {}} />
-                {meal.items?.length > 0 && (
-                  <div className="mt-1 ml-4 pl-3 border-l-2 border-gray-100">
-                    {meal.items.map((item, i) => (
-                      <div key={i} className="flex justify-between text-xs text-gray-500 py-0.5">
-                        <span>{item.name}</span>
-                        <span className="text-gray-400">{item.calories} kcal · {Math.round(item.carbs_g || 0)}C {Math.round(item.protein_g || 0)}P {Math.round(item.fats_g || 0)}F</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+              <MealCard
+                key={meal.id}
+                meal={meal}
+                onClick={() => setViewingMeal(meal)}
+                onAdd={() => navigate(`/log?type=${meal.meal_type}`)}
+              />
             ))}
           </div>
         )}
       </div>
+
+      {viewingMeal && (
+        <MealDetailModal
+          meal={viewingMeal}
+          onClose={() => setViewingMeal(null)}
+          onEdit={meal => { setViewingMeal(null); setEditingMeal(meal) }}
+          onDelete={id => { handleDelete(id); setViewingMeal(null) }}
+          onLogAgain={!isToday ? handleLogAgain : undefined}
+        />
+      )}
+
+      {editingMeal && (
+        <EditMealModal
+          meal={editingMeal}
+          onClose={() => setEditingMeal(null)}
+          onSaved={refresh}
+        />
+      )}
     </div>
   )
 }

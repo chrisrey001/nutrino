@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useProfile } from '../hooks/useProfile'
+import NutrinoLogo from '../components/NutrinoLogo'
 
 export default function Settings() {
   const { profile, loading, save } = useProfile()
@@ -32,8 +33,9 @@ export default function Settings() {
   if (loading) return <div className="flex items-center justify-center h-screen text-gray-400 text-sm">Loading…</div>
 
   return (
-    <div className="px-4 pt-12 pb-8 max-w-md mx-auto">
-      <h1 className="text-xl font-bold text-gray-900 mb-6">Settings</h1>
+    <div className="px-4 pt-10 pb-24 max-w-md mx-auto">
+      <NutrinoLogo className="mb-1" />
+      <h1 className="text-xl font-bold text-gray-900 mb-6 mt-1">Settings</h1>
 
       <div className="space-y-6">
         {/* Profile */}
