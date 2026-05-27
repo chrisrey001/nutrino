@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { analyzeMeal, analyzeMealText } from '../lib/gemini'
+import { useFavorites } from '../hooks/useFavorites'
 import { supabase } from '../lib/supabase'
 import NutrinoLogo from '../components/NutrinoLogo'
 import { HARDCODED_USER_ID, MEAL_TYPES, toLocalDateString } from '../lib/utils'
@@ -11,6 +12,7 @@ export default function LogMeal() {
   const navigate = useNavigate()
   const [params] = useSearchParams()
   const fileRef = useRef()
+  const mode = params.get('mode') // 'photo' | 'text' | null
 
   const [imageFile, setImageFile] = useState(null)
   const [imagePreview, setImagePreview] = useState(null)
@@ -19,6 +21,7 @@ export default function LogMeal() {
   const [analyzing, setAnalyzing] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [savedFav, setSavedFav] = useState(false)
 
   const [result, setResult] = useState(null)
   const [description, setDescription] = useState('')
@@ -27,6 +30,8 @@ export default function LogMeal() {
   const [carbs, setCarbs] = useState('')
   const [protein, setProtein] = useState('')
   const [fats, setFats] = useState('')
+
+  const { create: createFavorite } = useFavorites()
 
   const applyResult = (data, fallbackDescription = '') => {
     setResult(data)
@@ -45,34 +50,27 @@ export default function LogMeal() {
     setImagePreview(URL.createObjectURL(file))
     setResult(null)
     setError('')
+    setSavedFav(false)
   }
 
   const runAnalysis = async (text) => {
     const apiKey = localStorage.getItem('gemini_api_key')
-    if (!apiKey) {
-      setError('No Gemini API key found. Go to Settings and add your key.')
-      return
-    }
+    if (!apiKey) { setError('No Gemini API key found. Go to Settings and add your key.'); return }
     setAnalyzing(true)
     setError('')
     try {
       if (imageFile) {
-        const data = await analyzeMeal(imageFile, apiKey)
+        const data = await analyzeMeal(imageFile, apiKey, textInput.trim() || null, mealType)
         applyResult(data)
       } else {
-        const data = await analyzeMealText(text, apiKey)
-        // only update macros/items if called from inside the editor (description already set)
+        const data = await analyzeMealText(text, apiKey, mealType)
         setItems(data.items || [])
         setCalories(String(data.total_calories || ''))
         setCarbs(String(data.total_carbs_g || ''))
         setProtein(String(data.total_protein_g || ''))
         setFats(String(data.total_fats_g || ''))
-        if (!result) {
-          setDescription(data.description || text)
-          setResult(data)
-        } else {
-          setResult(data)
-        }
+        if (!result) { setDescription(data.description || text); setResult(data) }
+        else setResult(data)
       }
     } catch (err) {
       setError(err.message)
@@ -88,10 +86,8 @@ export default function LogMeal() {
     if (!calories) { setError('Please analyze or enter calories before saving.'); return }
     setSaving(true)
     setError('')
-
     try {
       let image_url = null
-
       if (imageFile) {
         const ext = imageFile.name.split('.').pop() || 'jpg'
         const path = `${HARDCODED_USER_ID}/${today}/${mealType}_${Date.now()}.${ext}`
@@ -102,7 +98,6 @@ export default function LogMeal() {
         const { data: { publicUrl } } = supabase.storage.from('meal-photos').getPublicUrl(path)
         image_url = publicUrl
       }
-
       const { error: insertErr } = await supabase.from('meals').insert({
         user_id: HARDCODED_USER_ID,
         date: today,
@@ -117,7 +112,6 @@ export default function LogMeal() {
         ai_raw_response: result
       })
       if (insertErr) throw insertErr
-
       navigate('/')
     } catch (err) {
       setError(err.message)
@@ -125,18 +119,41 @@ export default function LogMeal() {
     }
   }
 
-  const canAnalyze = (imagePreview || textInput.trim().length > 0) && !result
+  const handleSaveFavorite = async () => {
+    await createFavorite({
+      name: description || 'Unnamed meal',
+      description,
+      calories: parseInt(calories) || 0,
+      carbs_g: parseFloat(carbs) || 0,
+      protein_g: parseFloat(protein) || 0,
+      fats_g: parseFloat(fats) || 0,
+      items,
+    })
+    setSavedFav(true)
+  }
+
+  const showCamera = mode !== 'text'
+  const showInitialText = !result && (mode !== 'photo' || imagePreview)
+  const canAnalyze = !result && (
+    mode === 'photo' ? !!imagePreview :
+    mode === 'text' ? textInput.trim().length > 0 :
+    (!!imagePreview || textInput.trim().length > 0)
+  )
+
+  const modeLabel = mode === 'photo' ? 'Take a Photo' : mode === 'text' ? 'Describe a Meal' : null
 
   return (
     <div className="min-h-screen bg-gray-50 max-w-md mx-auto">
-      {/* Header */}
       <div className="bg-white border-b border-gray-100 px-4 pt-10 pb-4 flex items-center gap-3">
         <button onClick={() => navigate(-1)} className="p-1 -ml-1 text-gray-500">
           <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
           </svg>
         </button>
-        <NutrinoLogo />
+        <div>
+          <NutrinoLogo />
+          {modeLabel && <p className="text-xs text-gray-400 mt-0.5">{modeLabel}</p>}
+        </div>
       </div>
 
       <div className="px-4 py-4 space-y-4 pb-24">
@@ -149,9 +166,7 @@ export default function LogMeal() {
                 key={m.value}
                 onClick={() => setMealType(m.value)}
                 className={`py-2 px-2 rounded-xl text-xs font-medium transition-colors ${
-                  mealType === m.value
-                    ? 'bg-green-600 text-white'
-                    : 'bg-white text-gray-600 border border-gray-200'
+                  mealType === m.value ? 'bg-green-600 text-white' : 'bg-white text-gray-600 border border-gray-200'
                 }`}
               >
                 {m.emoji} {m.label}
@@ -160,36 +175,38 @@ export default function LogMeal() {
           </div>
         </div>
 
-        {/* Photo */}
-        <div>
-          <label className="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-2">Photo</label>
-          {imagePreview ? (
-            <div className="relative">
-              <img src={imagePreview} alt="Meal" className="w-full rounded-2xl object-cover max-h-64" />
+        {/* Camera */}
+        {showCamera && (
+          <div>
+            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-2">Photo</label>
+            {imagePreview ? (
+              <div className="relative">
+                <img src={imagePreview} alt="Meal" className="w-full rounded-2xl object-cover max-h-64" />
+                <button
+                  onClick={() => fileRef.current?.click()}
+                  className="absolute bottom-2 right-2 bg-white bg-opacity-90 rounded-full px-3 py-1.5 text-xs font-medium text-gray-700 shadow"
+                >
+                  Retake
+                </button>
+              </div>
+            ) : (
               <button
                 onClick={() => fileRef.current?.click()}
-                className="absolute bottom-2 right-2 bg-white bg-opacity-90 rounded-full px-3 py-1.5 text-xs font-medium text-gray-700 shadow"
+                className="w-full h-44 bg-white border-2 border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center gap-2 text-gray-400"
               >
-                Retake
+                <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
+                  <circle cx="12" cy="13" r="4" />
+                </svg>
+                <span className="text-sm font-medium">Take a photo</span>
               </button>
-            </div>
-          ) : (
-            <button
-              onClick={() => fileRef.current?.click()}
-              className="w-full h-44 bg-white border-2 border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center gap-2 text-gray-400"
-            >
-              <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
-                <circle cx="12" cy="13" r="4" />
-              </svg>
-              <span className="text-sm font-medium">Take a photo</span>
-            </button>
-          )}
-          <input ref={fileRef} type="file" accept="image/*" capture="environment" onChange={handleFile} className="hidden" />
-        </div>
+            )}
+            <input ref={fileRef} type="file" accept="image/*" capture="environment" onChange={handleFile} className="hidden" />
+          </div>
+        )}
 
-        {/* Text input */}
-        {!result && (
+        {/* Text input — context for photo, or primary input for text mode */}
+        {showInitialText && (
           <div>
             <label className="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-2">
               {imagePreview ? 'Add context (optional)' : 'Describe your meal'}
@@ -198,7 +215,7 @@ export default function LogMeal() {
               value={textInput}
               onChange={e => { setTextInput(e.target.value); setError('') }}
               placeholder={imagePreview
-                ? 'e.g. large portion, added extra cheese…'
+                ? 'e.g. large portion, added extra cheese, no dressing…'
                 : 'e.g. 2 scrambled eggs, whole wheat toast, black coffee'}
               rows={3}
               className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
@@ -301,11 +318,19 @@ export default function LogMeal() {
             {result.notes && (
               <p className="text-xs text-gray-400 italic">{result.notes}</p>
             )}
+
+            <button
+              onClick={handleSaveFavorite}
+              disabled={savedFav}
+              className="w-full text-sm font-medium py-1.5 text-green-600 disabled:text-gray-400 transition-colors"
+            >
+              {savedFav ? '⭐ Saved to favorites!' : '⭐ Save as Favorite'}
+            </button>
           </div>
         )}
 
-        {/* Manual entry fallback — only when no photo and no text */}
-        {!result && !imagePreview && !textInput.trim() && (
+        {/* Manual entry fallback */}
+        {!result && !imagePreview && !textInput.trim() && mode !== 'photo' && mode !== 'text' && (
           <button
             onClick={() => setResult({ items: [] })}
             className="w-full text-sm text-gray-400 underline text-center"

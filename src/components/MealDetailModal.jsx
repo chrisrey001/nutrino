@@ -1,6 +1,23 @@
 import { useEffect, useRef, useState } from 'react'
 import { getMealMeta } from '../lib/utils'
 
+function SaveFavoriteButton({ meal, onSave }) {
+  const [saved, setSaved] = useState(false)
+  const handle = async () => {
+    await onSave(meal)
+    setSaved(true)
+  }
+  return (
+    <button
+      onClick={handle}
+      disabled={saved}
+      className="w-full h-12 bg-gray-100 text-gray-800 rounded-2xl text-sm font-semibold active:bg-gray-200 transition-colors disabled:text-gray-400"
+    >
+      {saved ? '⭐ Saved to Favorites!' : '⭐ Save as Favorite'}
+    </button>
+  )
+}
+
 const DISMISS_THRESHOLD = 140 // px down before auto-dismiss
 const VELOCITY_THRESHOLD = 0.5 // px/ms — fast flick dismisses even if short drag
 
@@ -42,7 +59,7 @@ function SegmentedMacroBar({ carbs, protein, fats }) {
   )
 }
 
-export default function MealDetailModal({ meal, onClose, onEdit, onDelete, onLogAgain }) {
+export default function MealDetailModal({ meal, onClose, onEdit, onDelete, onLogAgain, onSaveFavorite }) {
   const meta = getMealMeta(meal.meal_type)
   const time = meal.created_at
     ? new Date(meal.created_at).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
@@ -209,6 +226,9 @@ export default function MealDetailModal({ meal, onClose, onEdit, onDelete, onLog
             >
               Edit Entry
             </button>
+          )}
+          {onSaveFavorite && (
+            <SaveFavoriteButton meal={meal} onSave={onSaveFavorite} />
           )}
           {onLogAgain && (
             <button

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useProfile } from '../hooks/useProfile'
 import NutrinoLogo from '../components/NutrinoLogo'
+import FavoritesManager from '../components/FavoritesManager'
 
 export default function Settings() {
   const { profile, loading, save } = useProfile()
@@ -52,6 +53,13 @@ export default function Settings() {
           <Field label="Carbs (g)" value={form.carbs_goal_g} onChange={set('carbs_goal_g')} type="number" />
           <Field label="Protein (g)" value={form.protein_goal_g} onChange={set('protein_goal_g')} type="number" />
           <Field label="Fat (g)" value={form.fats_goal_g} onChange={set('fats_goal_g')} type="number" />
+        </section>
+
+        {/* Favorites */}
+        <section className="bg-white rounded-2xl shadow-sm p-4 space-y-3">
+          <h2 className="text-sm font-semibold text-gray-700">Favorites</h2>
+          <p className="text-xs text-gray-400">Saved meals for quick logging. Add manually here or from any meal entry.</p>
+          <FavoritesManager />
         </section>
 
         {/* API Key */}

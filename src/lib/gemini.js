@@ -23,27 +23,56 @@ const SCHEMA = `{
   "notes": "Any caveats about the estimate"
 }`
 
-const PHOTO_PROMPT = `Analyze this meal photo and estimate the nutritional content.
+function photoPrompt(mealType, textContext) {
+  const lines = [
+    'Analyze this meal photo and estimate the nutritional content.',
+    '',
+    'Important estimation rules:',
+    '- Base your estimate only on food that is clearly visible in the photo.',
+    '- Do not add hidden calories for food that may be out of frame.',
+    '- Photos flatten depth and make portions look larger; lean toward smaller estimates when uncertain.',
+    '- Calories must be consistent with macros: total_calories ≈ carbs_g×4 + protein_g×4 + fats_g×9.',
+    '- Round all numbers to the nearest whole number.',
+  ]
+  if (mealType) lines.push(`- Meal type: ${mealType}.`)
+  if (textContext) lines.push(`- User context: ${textContext}`)
+  lines.push('', 'Return ONLY valid JSON (no markdown, no backticks, no explanation):', SCHEMA)
+  return lines.join('\n')
+}
 
-Return ONLY valid JSON (no markdown, no backticks, no explanation):
-${SCHEMA}
+function textPrompt(description, mealType) {
+  const lines = [
+    `Estimate the nutritional content of this meal: "${description}"`,
+    '',
+    'Important estimation rules:',
+    '- Use typical restaurant or home-cooked portion sizes unless a specific amount is stated.',
+    '- Do not pad quantities beyond what is described.',
+    '- Calories must be consistent with macros: total_calories ≈ carbs_g×4 + protein_g×4 + fats_g×9.',
+    '- Round all numbers to the nearest whole number.',
+  ]
+  if (mealType) lines.push(`- Meal type: ${mealType}.`)
+  lines.push('', 'Return ONLY valid JSON (no markdown, no backticks, no explanation):', SCHEMA)
+  return lines.join('\n')
+}
 
-Be realistic with portions visible in the photo. When uncertain, estimate conservatively. Round to nearest whole number.`
-
-const textPrompt = (description) =>
-  `Estimate the nutritional content of this meal based on the description:
-"${description}"
-
-Return ONLY valid JSON (no markdown, no backticks, no explanation):
-${SCHEMA}
-
-Use typical restaurant or home-cooked portion sizes unless specified. When uncertain, estimate conservatively. Round to nearest whole number.`
+function validateMacroConsistency(data) {
+  const calculatedCal = Math.round(
+    (data.total_carbs_g || 0) * 4 + (data.total_protein_g || 0) * 4 + (data.total_fats_g || 0) * 9
+  )
+  if (calculatedCal > 0 && data.total_calories > calculatedCal * 1.15) {
+    data.total_calories = calculatedCal
+  }
+  return data
+}
 
 async function callGemini(parts, apiKey) {
   const res = await fetch(`${API_BASE}?key=${apiKey}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ contents: [{ parts }] })
+    body: JSON.stringify({
+      contents: [{ parts }],
+      generationConfig: { response_mime_type: 'application/json' }
+    })
   })
 
   if (!res.ok) {
@@ -56,7 +85,7 @@ async function callGemini(parts, apiKey) {
   const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
   const cleaned = text.replace(/```json|```/g, '').trim()
   try {
-    return JSON.parse(cleaned)
+    return validateMacroConsistency(JSON.parse(cleaned))
   } catch {
     throw new Error('Gemini returned invalid JSON. Try again.')
   }
@@ -92,19 +121,19 @@ Write 2-3 plain sentences, no bullet points, no markdown. Start with the most no
   return callGeminiText([{ text: prompt }], apiKey)
 }
 
-export async function analyzeMeal(imageFile, apiKey) {
+export async function analyzeMeal(imageFile, apiKey, textContext = null, mealType = null) {
   if (!apiKey) throw new Error('No Gemini API key. Add it in Settings.')
   const compressed = await compressImageFile(imageFile)
   const base64Image = await fileToBase64(compressed)
   const mimeType = compressed.type || 'image/jpeg'
   return callGemini([
     { inline_data: { mime_type: mimeType, data: base64Image } },
-    { text: PHOTO_PROMPT }
+    { text: photoPrompt(mealType, textContext) }
   ], apiKey)
 }
 
-export async function analyzeMealText(description, apiKey) {
+export async function analyzeMealText(description, apiKey, mealType = null) {
   if (!apiKey) throw new Error('No Gemini API key. Add it in Settings.')
   if (!description.trim()) throw new Error('Please enter a meal description.')
-  return callGemini([{ text: textPrompt(description) }], apiKey)
+  return callGemini([{ text: textPrompt(description, mealType) }], apiKey)
 }

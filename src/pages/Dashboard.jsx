@@ -2,9 +2,11 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMeals } from '../hooks/useMeals'
 import { useProfile } from '../hooks/useProfile'
+import { useFavorites } from '../hooks/useFavorites'
 import MealCard from '../components/MealCard'
 import MealDetailModal from '../components/MealDetailModal'
 import EditMealModal from '../components/EditMealModal'
+import LogActionSheet from '../components/LogActionSheet'
 import NutrinoLogo from '../components/NutrinoLogo'
 import { CaloriesCard, MacrosCard } from '../components/DayStats'
 import { toLocalDateString, sumMacros } from '../lib/utils'
@@ -19,6 +21,8 @@ export default function Dashboard() {
   const totals = sumMacros(meals)
   const [viewingMeal, setViewingMeal] = useState(null)
   const [editingMeal, setEditingMeal] = useState(null)
+  const [showActionSheet, setShowActionSheet] = useState(false)
+  const { create: createFavorite } = useFavorites()
 
   const handleDelete = async (id) => {
     await supabase.from('meals').delete().eq('id', id)
@@ -80,7 +84,7 @@ export default function Dashboard() {
 
       {/* FAB */}
       <button
-        onClick={() => navigate('/log')}
+        onClick={() => setShowActionSheet(true)}
         className="fixed bottom-20 right-4 w-14 h-14 bg-green-600 text-white rounded-full shadow-lg flex items-center justify-center z-30 active:scale-95 transition-transform"
         aria-label="Log a meal"
       >
@@ -89,12 +93,28 @@ export default function Dashboard() {
         </svg>
       </button>
 
+      {showActionSheet && (
+        <LogActionSheet
+          onClose={() => setShowActionSheet(false)}
+          onMealAdded={refresh}
+        />
+      )}
+
       {viewingMeal && (
         <MealDetailModal
           meal={viewingMeal}
           onClose={() => setViewingMeal(null)}
           onEdit={meal => { setViewingMeal(null); setEditingMeal(meal) }}
           onDelete={id => { handleDelete(id); setViewingMeal(null) }}
+          onSaveFavorite={meal => createFavorite({
+            name: meal.description || 'Unnamed meal',
+            description: meal.description,
+            calories: meal.calories,
+            carbs_g: meal.carbs_g,
+            protein_g: meal.protein_g,
+            fats_g: meal.fats_g,
+            items: meal.items,
+          })}
         />
       )}
 
