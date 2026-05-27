@@ -18,20 +18,27 @@ export default function LogActionSheet({ onClose, onMealAdded }) {
   const [translateY, setTranslateY] = useState(0)
   const [isDragging, setIsDragging] = useState(false)
   const startY = useRef(0)
-  const startTime = useRef(0)
+  const lastY = useRef(0)
+  const lastTime = useRef(0)
 
   const onDragStart = (e) => {
     startY.current = e.touches[0].clientY
-    startTime.current = Date.now()
+    lastY.current = e.touches[0].clientY
+    lastTime.current = Date.now()
     setIsDragging(true)
   }
   const onDragMove = (e) => {
     const delta = e.touches[0].clientY - startY.current
-    if (delta > 0) setTranslateY(delta)
+    if (delta > 0) {
+      lastY.current = e.touches[0].clientY
+      lastTime.current = Date.now()
+      setTranslateY(delta)
+    }
   }
   const onDragEnd = () => {
     setIsDragging(false)
-    const velocity = translateY / Math.max(1, Date.now() - startTime.current)
+    const elapsed = Math.max(16, Date.now() - lastTime.current)
+    const velocity = (lastY.current - startY.current) / elapsed
     if (translateY > DISMISS_THRESHOLD || velocity > VELOCITY_THRESHOLD) onClose()
     else setTranslateY(0)
   }
@@ -71,19 +78,32 @@ export default function LogActionSheet({ onClose, onMealAdded }) {
         onClick={e => e.stopPropagation()}
       >
         <div
-          className="touch-none select-none"
+          className="touch-none select-none px-4 pt-3 pb-4"
           onTouchStart={onDragStart}
           onTouchMove={onDragMove}
           onTouchEnd={onDragEnd}
         >
-          <div className="flex justify-center pt-3 pb-1">
-            <div className="w-10 h-1 bg-gray-200 rounded-full" />
-          </div>
+          <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-3" />
+          {view === 'options' ? (
+            <p className="text-base font-semibold text-gray-900">Log Your Meal</p>
+          ) : (
+            <div className="flex items-center gap-2">
+              <button
+                onTouchEnd={e => e.stopPropagation()}
+                onClick={() => setView('options')}
+                className="p-1 -ml-1 text-gray-500"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+              <p className="text-base font-semibold text-gray-900">Favorites</p>
+            </div>
+          )}
         </div>
 
         {view === 'options' ? (
-          <div className="px-4 pb-10 pt-2">
-            <p className="text-base font-semibold text-gray-900 mb-4">Log Your Meal</p>
+          <div className="px-4 pb-10">
             <div className="space-y-2">
               <OptionButton
                 icon="📸"
@@ -107,15 +127,6 @@ export default function LogActionSheet({ onClose, onMealAdded }) {
           </div>
         ) : (
           <div className="pb-10">
-            <div className="flex items-center gap-2 px-4 pt-2 pb-3">
-              <button onClick={() => setView('options')} className="p-1 -ml-1 text-gray-500">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
-              <p className="text-base font-semibold text-gray-900">Favorites</p>
-            </div>
-
             {loading ? (
               <p className="text-center py-8 text-gray-400 text-sm">Loading…</p>
             ) : favorites.length === 0 ? (
