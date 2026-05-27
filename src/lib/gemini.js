@@ -60,6 +60,14 @@ function validateMacroConsistency(data) {
     (data.total_carbs_g || 0) * 4 + (data.total_protein_g || 0) * 4 + (data.total_fats_g || 0) * 9
   )
   if (calculatedCal > 0 && data.total_calories > calculatedCal * 1.15) {
+    if (Array.isArray(data.items)) {
+      data.items = data.items.map(item => ({
+        ...item,
+        calories: Math.round(
+          (item.carbs_g || 0) * 4 + (item.protein_g || 0) * 4 + (item.fats_g || 0) * 9
+        )
+      }))
+    }
     data.total_calories = calculatedCal
   }
   return data

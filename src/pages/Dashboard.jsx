@@ -106,6 +106,7 @@ export default function Dashboard() {
           onClose={() => setViewingMeal(null)}
           onEdit={meal => { setViewingMeal(null); setEditingMeal(meal) }}
           onDelete={id => { handleDelete(id); setViewingMeal(null) }}
+          onUpdate={refresh}
           onSaveFavorite={meal => createFavorite({
             name: meal.description || 'Unnamed meal',
             description: meal.description,
