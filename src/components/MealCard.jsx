@@ -3,6 +3,9 @@ import { getMealIcon } from '../lib/mealIcons'
 
 export default function MealCard({ meal, onClick, onAdd, compact = false }) {
   const meta = getMealMeta(meal.meal_type)
+  const displayCalories = (meal.items?.length > 0)
+    ? meal.items.reduce((s, item) => s + (item.calories || 0), 0)
+    : (meal.calories || 0)
 
   if (compact) {
     return (
@@ -19,7 +22,7 @@ export default function MealCard({ meal, onClick, onAdd, compact = false }) {
           <p className="text-gray-900 text-sm font-medium truncate">{meal.description || meta.label}</p>
           <p className="text-gray-400 text-xs mt-0.5">{meta.label}</p>
         </div>
-        <span className="text-gray-700 font-bold text-sm flex-shrink-0">{meal.calories} kcal</span>
+        <span className="text-gray-700 font-bold text-sm flex-shrink-0">{displayCalories} kcal</span>
       </div>
     )
   }
@@ -34,7 +37,7 @@ export default function MealCard({ meal, onClick, onAdd, compact = false }) {
         <span className="bg-green-50 text-green-700 text-xs font-semibold px-2.5 py-1 rounded-full flex items-center gap-1">
           {getMealIcon(meal.meal_type)} {meta.label}
         </span>
-        <span className="text-gray-900 font-bold text-base">{meal.calories} <span className="text-gray-400 font-normal text-sm">kcal</span></span>
+        <span className="text-gray-900 font-bold text-base">{displayCalories} <span className="text-gray-400 font-normal text-sm">kcal</span></span>
       </div>
 
       {/* Photo */}

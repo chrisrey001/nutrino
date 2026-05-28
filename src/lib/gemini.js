@@ -70,6 +70,10 @@ function validateMacroConsistency(data) {
     }
     data.total_calories = calculatedCal
   }
+  // Always sync total to sum of items so the two never diverge
+  if (Array.isArray(data.items) && data.items.length > 0) {
+    data.total_calories = data.items.reduce((s, item) => s + (item.calories || 0), 0)
+  }
   return data
 }
 

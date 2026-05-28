@@ -38,8 +38,12 @@ export default function LogMeal() {
   const applyResult = (data, fallbackDescription = '') => {
     setResult(data)
     setDescription(data.description || fallbackDescription)
-    setItems(data.items || [])
-    setCalories(String(data.total_calories || ''))
+    const dataItems = data.items || []
+    setItems(dataItems)
+    const computedCal = dataItems.length > 0
+      ? dataItems.reduce((s, i) => s + (i.calories || 0), 0)
+      : (data.total_calories || 0)
+    setCalories(String(computedCal))
     setCarbs(String(data.total_carbs_g || ''))
     setProtein(String(data.total_protein_g || ''))
     setFats(String(data.total_fats_g || ''))
@@ -66,8 +70,12 @@ export default function LogMeal() {
         applyResult(data)
       } else {
         const data = await analyzeMealText(text, apiKey, mealType)
-        setItems(data.items || [])
-        setCalories(String(data.total_calories || ''))
+        const textItems = data.items || []
+        setItems(textItems)
+        const computedCal = textItems.length > 0
+          ? textItems.reduce((s, i) => s + (i.calories || 0), 0)
+          : (data.total_calories || 0)
+        setCalories(String(computedCal))
         setCarbs(String(data.total_carbs_g || ''))
         setProtein(String(data.total_protein_g || ''))
         setFats(String(data.total_fats_g || ''))
