@@ -1,3 +1,6 @@
+import { IconFlame, IconTarget, IconChartDonut, IconBread, IconMeat, IconDroplet } from '@tabler/icons-react'
+import MacroBar from './MacroBar'
+
 function RingProgress({ pct, color, size, strokeWidth, children }) {
   const r = (size - strokeWidth * 2) / 2
   const circ = 2 * Math.PI * r
@@ -28,19 +31,34 @@ function RingProgress({ pct, color, size, strokeWidth, children }) {
   )
 }
 
+function CaloriesStackedBar({ eaten, goal }) {
+  const W = 300, H = 18
+  const pct = goal > 0 ? Math.min(1, eaten / goal) : 0
+  const over = eaten > goal
+  const eatenW = Math.max(4, pct * W)
+  const color = over ? '#ef4444' : '#14b8a6'
+  return (
+    <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ display: 'block' }}>
+      <rect x={0} y={0} width={W} height={H} rx={9} fill="#f3f4f6" />
+      <rect x={0} y={0} width={eatenW} height={H} rx={9} fill={color} />
+      {!over && pct < 0.97 && <rect x={eatenW - 2} y={0} width={4} height={H} fill="white" />}
+    </svg>
+  )
+}
+
 export function CaloriesCard({ eaten, goal }) {
   const pct = goal > 0 ? eaten / goal : 0
   const remaining = Math.max(0, goal - eaten)
 
   return (
     <div className="bg-gray-50 rounded-3xl p-5">
-      <p className="text-sm font-bold text-gray-900 mb-4">Calories</p>
+      <div className="flex items-center gap-1.5 mb-4">
+        <IconFlame size={16} stroke={1.5} className="text-teal-500" />
+        <p className="text-sm font-bold text-gray-900">Calories</p>
+      </div>
       <div className="flex items-center justify-between gap-2">
         <div className="flex-1 flex flex-col items-center gap-1">
-          <svg className="w-7 h-7 text-teal-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v2m0 14v2M5.636 5.636l1.414 1.414M15.95 15.95l1.414 1.414M3 12h2m14 0h2M5.636 18.364l1.414-1.414M15.95 8.05l1.414-1.414" />
-            <circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth={1.5} fill="none" />
-          </svg>
+          <IconFlame size={28} stroke={1.5} className="text-teal-400" />
           <p className="text-2xl font-bold text-gray-900 leading-none">{eaten.toLocaleString()}</p>
           <p className="text-xs text-gray-500">Eaten</p>
         </div>
@@ -51,12 +69,17 @@ export function CaloriesCard({ eaten, goal }) {
         </RingProgress>
 
         <div className="flex-1 flex flex-col items-center gap-1">
-          <svg className="w-7 h-7 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-            <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth={1.5} fill="none" />
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4" />
-          </svg>
+          <IconTarget size={28} stroke={1.5} className="text-blue-400" />
           <p className="text-2xl font-bold text-gray-900 leading-none">{goal.toLocaleString()}</p>
           <p className="text-xs text-gray-500">Intake Goal</p>
+        </div>
+      </div>
+
+      <div className="mt-4">
+        <CaloriesStackedBar eaten={eaten} goal={goal} />
+        <div className="flex justify-between mt-1.5">
+          <span className="text-xs text-teal-500 font-medium">Eaten</span>
+          <span className="text-xs text-gray-400 font-medium">Goal</span>
         </div>
       </div>
     </div>
@@ -64,39 +87,25 @@ export function CaloriesCard({ eaten, goal }) {
 }
 
 export function MacrosCard({ carbs, carbsGoal, protein, proteinGoal, fats, fatsGoal }) {
-  const macros = [
-    { label: 'Carbs', eaten: carbs, goal: carbsGoal, color: '#3b82f6',
-      icon: <path strokeLinecap="round" strokeLinejoin="round" d="M12 2C8 2 5 6 5 10c0 5.25 7 12 7 12s7-6.75 7-12c0-4-3-8-7-8z" /> },
-    { label: 'Protein', eaten: protein, goal: proteinGoal, color: '#8b5cf6',
-      icon: <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" /> },
-    { label: 'Fats', eaten: fats, goal: fatsGoal, color: '#f97316',
-      icon: <path strokeLinecap="round" strokeLinejoin="round" d="M12 2C9 6 6 9 6 13a6 6 0 0012 0c0-4-3-7-6-11z" /> },
-  ]
-
   return (
     <div className="bg-gray-50 rounded-3xl p-5">
-      <p className="text-sm font-bold text-gray-900 mb-4">Macros</p>
-      <div className="grid grid-cols-3 gap-3">
-        {macros.map(({ label, eaten, goal, color, icon }) => {
-          const pct = goal > 0 ? eaten / goal : 0
-          return (
-            <div key={label} className="flex flex-col items-center gap-2">
-              <div className="flex items-center gap-1 text-xs font-semibold text-gray-700">
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke={color} strokeWidth={2}>
-                  {icon}
-                </svg>
-                {label}
-              </div>
-              <RingProgress pct={pct} color={color} size={88} strokeWidth={9}>
-                <p className="text-sm font-bold text-gray-900">{Math.round(pct * 100)}%</p>
-              </RingProgress>
-              <p className="text-xs text-center">
-                <span className="font-semibold text-gray-800">{Math.round(eaten)}g</span>
-                <span className="text-gray-400">/{goal}g</span>
-              </p>
-            </div>
-          )
-        })}
+      <div className="flex items-center gap-1.5 mb-4">
+        <IconChartDonut size={16} stroke={1.5} className="text-gray-500" />
+        <p className="text-sm font-bold text-gray-900">Macros</p>
+      </div>
+      <div className="space-y-3">
+        <MacroBar
+          label="Carbs" eaten={carbs} goal={carbsGoal} color="bg-blue-500"
+          icon={<IconBread size={13} stroke={1.5} color="#3b82f6" />}
+        />
+        <MacroBar
+          label="Protein" eaten={protein} goal={proteinGoal} color="bg-purple-500"
+          icon={<IconMeat size={13} stroke={1.5} color="#8b5cf6" />}
+        />
+        <MacroBar
+          label="Fats" eaten={fats} goal={fatsGoal} color="bg-orange-500"
+          icon={<IconDroplet size={13} stroke={1.5} color="#f97316" />}
+        />
       </div>
     </div>
   )

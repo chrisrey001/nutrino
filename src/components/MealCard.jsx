@@ -1,4 +1,5 @@
 import { getMealMeta } from '../lib/utils'
+import { getMealIcon } from '../lib/mealIcons'
 
 export default function MealCard({ meal, onClick, onAdd, compact = false }) {
   const meta = getMealMeta(meal.meal_type)
@@ -12,7 +13,7 @@ export default function MealCard({ meal, onClick, onAdd, compact = false }) {
         <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center text-lg flex-shrink-0">
           {meal.image_url
             ? <img src={meal.image_url} alt="" className="w-full h-full rounded-xl object-cover" />
-            : meta.emoji}
+            : <span className="text-green-600">{getMealIcon(meal.meal_type)}</span>}
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-gray-900 text-sm font-medium truncate">{meal.description || meta.label}</p>
@@ -30,8 +31,8 @@ export default function MealCard({ meal, onClick, onAdd, compact = false }) {
     >
       {/* Header */}
       <div className="flex items-center justify-between px-4 pt-4 pb-3">
-        <span className="bg-green-50 text-green-700 text-xs font-semibold px-2.5 py-1 rounded-full">
-          {meta.emoji} {meta.label}
+        <span className="bg-green-50 text-green-700 text-xs font-semibold px-2.5 py-1 rounded-full flex items-center gap-1">
+          {getMealIcon(meal.meal_type)} {meta.label}
         </span>
         <span className="text-gray-900 font-bold text-base">{meal.calories} <span className="text-gray-400 font-normal text-sm">kcal</span></span>
       </div>
@@ -43,10 +44,10 @@ export default function MealCard({ meal, onClick, onAdd, compact = false }) {
         </div>
       )}
 
-      {/* No photo + no items: emoji placeholder */}
+      {/* No photo + no items: icon placeholder */}
       {!meal.image_url && (!meal.items || meal.items.length === 0) && (
-        <div className="mx-3 mb-3 h-20 bg-green-50 rounded-2xl flex items-center justify-center text-3xl">
-          {meta.emoji}
+        <div className="mx-3 mb-3 h-20 bg-green-50 rounded-2xl flex items-center justify-center text-green-400">
+          {getMealIcon(meal.meal_type, 36)}
         </div>
       )}
 

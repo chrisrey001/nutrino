@@ -5,6 +5,8 @@ import { useFavorites } from '../hooks/useFavorites'
 import { supabase } from '../lib/supabase'
 import NutrinoLogo from '../components/NutrinoLogo'
 import { HARDCODED_USER_ID, MEAL_TYPES, toLocalDateString } from '../lib/utils'
+import { getMealIcon } from '../lib/mealIcons'
+import { IconSparkles, IconChartPie, IconStar, IconStarFilled } from '@tabler/icons-react'
 
 const today = toLocalDateString()
 
@@ -165,11 +167,11 @@ export default function LogMeal() {
               <button
                 key={m.value}
                 onClick={() => setMealType(m.value)}
-                className={`py-2 px-2 rounded-xl text-xs font-medium transition-colors ${
+                className={`py-2 px-2 rounded-xl text-xs font-medium transition-colors flex items-center justify-center gap-1 ${
                   mealType === m.value ? 'bg-green-600 text-white' : 'bg-white text-gray-600 border border-gray-200'
                 }`}
               >
-                {m.emoji} {m.label}
+                {getMealIcon(m.value, 13)} {m.label}
               </button>
             ))}
           </div>
@@ -238,7 +240,7 @@ export default function LogMeal() {
                 </svg>
                 Analyzing…
               </>
-            ) : '✨ Analyze with AI'}
+            ) : <><IconSparkles size={16} stroke={1.5} /> Analyze with AI</>}
           </button>
         )}
 
@@ -249,7 +251,7 @@ export default function LogMeal() {
         {/* Results editor */}
         {result && (
           <div className="bg-white rounded-2xl shadow-sm p-4 space-y-4">
-            <h2 className="font-semibold text-gray-900">Nutrition Details</h2>
+            <h2 className="font-semibold text-gray-900 flex items-center gap-1.5"><IconChartPie size={16} stroke={1.5} className="text-gray-500" /> Nutrition Details</h2>
 
             <div>
               <label className="text-xs font-medium text-gray-500 block mb-1">Description</label>
@@ -274,7 +276,7 @@ export default function LogMeal() {
                       </svg>
                       Estimating…
                     </>
-                  ) : '✨ Estimate macros with AI'}
+                  ) : <><IconSparkles size={14} stroke={1.5} /> Estimate macros with AI</>}
                 </button>
               )}
             </div>
@@ -324,7 +326,7 @@ export default function LogMeal() {
               disabled={savedFav}
               className="w-full text-sm font-medium py-1.5 text-green-600 disabled:text-gray-400 transition-colors"
             >
-              {savedFav ? '⭐ Saved to favorites!' : '⭐ Save as Favorite'}
+              {savedFav ? <><IconStarFilled size={14} className="text-yellow-500" /> Saved to favorites!</> : <><IconStar size={14} /> Save as Favorite</>}
             </button>
           </div>
         )}

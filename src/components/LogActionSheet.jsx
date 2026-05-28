@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { useFavorites } from '../hooks/useFavorites'
 import { supabase } from '../lib/supabase'
 import { HARDCODED_USER_ID, MEAL_TYPES, toLocalDateString } from '../lib/utils'
+import { getMealIcon } from '../lib/mealIcons'
+import { IconCamera, IconPencil, IconStar } from '@tabler/icons-react'
 
 const DISMISS_THRESHOLD = 140
 const VELOCITY_THRESHOLD = 0.5
@@ -106,19 +108,19 @@ export default function LogActionSheet({ onClose, onMealAdded }) {
           <div className="px-4 pb-10">
             <div className="space-y-2">
               <OptionButton
-                icon="📸"
+                icon={<IconCamera size={22} stroke={1.5} />}
                 title="Take a Photo"
                 sub="AI analyzes your meal"
                 onClick={() => { onClose(); navigate('/log?mode=photo') }}
               />
               <OptionButton
-                icon="✏️"
+                icon={<IconPencil size={22} stroke={1.5} />}
                 title="Describe Your Meal"
                 sub="Type what you ate"
                 onClick={() => { onClose(); navigate('/log?mode=text') }}
               />
               <OptionButton
-                icon="⭐"
+                icon={<IconStar size={22} stroke={1.5} />}
                 title="Favorites"
                 sub="Quick-add a saved meal"
                 onClick={() => setView('favorites')}
@@ -161,13 +163,13 @@ export default function LogActionSheet({ onClose, onMealAdded }) {
                             <button
                               key={m.value}
                               onClick={() => setSelectedType(m.value)}
-                              className={`py-1.5 px-1 rounded-xl text-xs font-medium transition-colors ${
+                              className={`py-1.5 px-1 rounded-xl text-xs font-medium transition-colors flex items-center justify-center gap-1 ${
                                 selectedType === m.value
                                   ? 'bg-green-600 text-white'
                                   : 'bg-white text-gray-600 border border-gray-200'
                               }`}
                             >
-                              {m.emoji} {m.label}
+                              {getMealIcon(m.value, 13)} {m.label}
                             </button>
                           ))}
                         </div>
@@ -197,7 +199,9 @@ function OptionButton({ icon, title, sub, onClick }) {
       onClick={onClick}
       className="w-full flex items-center gap-4 bg-gray-50 rounded-2xl px-4 py-4 active:bg-gray-100 transition-colors text-left"
     >
-      <span className="text-2xl">{icon}</span>
+      <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-gray-600 flex-shrink-0 shadow-sm">
+        {icon}
+      </div>
       <div>
         <p className="text-gray-900 text-sm font-semibold">{title}</p>
         <p className="text-gray-400 text-xs mt-0.5">{sub}</p>

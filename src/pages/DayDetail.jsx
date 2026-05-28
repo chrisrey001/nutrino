@@ -9,6 +9,7 @@ import NutrinoLogo from '../components/NutrinoLogo'
 import { CaloriesCard, MacrosCard } from '../components/DayStats'
 import { sumMacros, toLocalDateString } from '../lib/utils'
 import { supabase } from '../lib/supabase'
+import { IconToolsKitchen2 } from '@tabler/icons-react'
 
 const todayStr = toLocalDateString()
 
@@ -87,7 +88,7 @@ export default function DayDetail() {
           <div className="flex items-center justify-center h-32 text-gray-400 text-sm">Loading…</div>
         ) : meals.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-40 text-center">
-            <span className="text-4xl mb-3">🍽️</span>
+            <IconToolsKitchen2 size={48} stroke={1} className="text-gray-300 mb-3" />
             <p className="text-gray-500 text-sm">No meals logged for this day</p>
           </div>
         ) : (

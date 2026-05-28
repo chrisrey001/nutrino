@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useProfile } from '../hooks/useProfile'
 import NutrinoLogo from '../components/NutrinoLogo'
 import FavoritesManager from '../components/FavoritesManager'
+import { IconUser, IconTarget, IconStar, IconKey } from '@tabler/icons-react'
 
 export default function Settings() {
   const { profile, loading, save } = useProfile()
@@ -41,14 +42,14 @@ export default function Settings() {
       <div className="space-y-6">
         {/* Profile */}
         <section className="bg-white rounded-2xl shadow-sm p-4 space-y-4">
-          <h2 className="text-sm font-semibold text-gray-700">Profile</h2>
+          <h2 className="text-sm font-semibold text-gray-700 flex items-center gap-1.5"><IconUser size={15} stroke={1.5} />Profile</h2>
           <Field label="Your Name" value={form.name || ''} onChange={set('name')} placeholder="e.g. Chris" />
           <Field label="Dietician Name" value={form.dietician_name || ''} onChange={set('dietician_name')} placeholder="Appears on PDF reports" />
         </section>
 
         {/* Goals */}
         <section className="bg-white rounded-2xl shadow-sm p-4 space-y-4">
-          <h2 className="text-sm font-semibold text-gray-700">Daily Goals</h2>
+          <h2 className="text-sm font-semibold text-gray-700 flex items-center gap-1.5"><IconTarget size={15} stroke={1.5} />Daily Goals</h2>
           <Field label="Calories (kcal)" value={form.calorie_goal} onChange={set('calorie_goal')} type="number" />
           <Field label="Carbs (g)" value={form.carbs_goal_g} onChange={set('carbs_goal_g')} type="number" />
           <Field label="Protein (g)" value={form.protein_goal_g} onChange={set('protein_goal_g')} type="number" />
@@ -57,14 +58,14 @@ export default function Settings() {
 
         {/* Favorites */}
         <section className="bg-white rounded-2xl shadow-sm p-4 space-y-3">
-          <h2 className="text-sm font-semibold text-gray-700">Favorites</h2>
+          <h2 className="text-sm font-semibold text-gray-700 flex items-center gap-1.5"><IconStar size={15} stroke={1.5} />Favorites</h2>
           <p className="text-xs text-gray-400">Saved meals for quick logging. Add manually here or from any meal entry.</p>
           <FavoritesManager />
         </section>
 
         {/* API Key */}
         <section className="bg-white rounded-2xl shadow-sm p-4 space-y-3">
-          <h2 className="text-sm font-semibold text-gray-700">Gemini API Key</h2>
+          <h2 className="text-sm font-semibold text-gray-700 flex items-center gap-1.5"><IconKey size={15} stroke={1.5} />Gemini API Key</h2>
           <p className="text-xs text-gray-400">Enter once — stored locally on this device only, never sent to any server.</p>
           <input
             type="password"

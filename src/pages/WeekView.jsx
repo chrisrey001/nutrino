@@ -5,6 +5,10 @@ import NutrinoLogo from '../components/NutrinoLogo'
 import { getWeekDates, sumMacros, toLocalDateString, generateWeeklyNote, formatTime } from '../lib/utils'
 import { generateWeeklyPDF } from '../lib/pdf'
 import { generateWeekInsight } from '../lib/gemini'
+import {
+  IconSparkles, IconChartBar, IconCalendarStats, IconFlame, IconTarget,
+  IconChartDonut3, IconTrendingUp, IconBread, IconMeat, IconDroplet
+} from '@tabler/icons-react'
 
 const todayStr = toLocalDateString()
 const INSIGHT_HOUR = 21 // 9pm
@@ -353,7 +357,7 @@ export default function WeekView() {
           <div className="flex items-center justify-center h-48 text-gray-400 text-sm">Loading…</div>
         ) : daysWithMeals === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 text-center">
-            <span className="text-4xl mb-3">📊</span>
+            <IconChartBar size={48} stroke={1} className="text-gray-300 mb-3" />
             <p className="text-gray-500 text-sm font-medium">No meals logged this week</p>
             <p className="text-gray-400 text-xs mt-1">Start logging to see your trends</p>
           </div>
@@ -363,7 +367,7 @@ export default function WeekView() {
             <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-4">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
-                  <span className="text-lg">✨</span>
+                  <IconSparkles size={16} stroke={1.5} className="text-blue-500" />
                   <p className="text-xs font-bold text-blue-700 uppercase tracking-wide">Weekly Insight</p>
                 </div>
                 {localStorage.getItem('gemini_api_key') && !insightLoading && daysWithMeals > 0 && (
@@ -402,11 +406,12 @@ export default function WeekView() {
             {/* Summary stats */}
             <div className="grid grid-cols-3 gap-2">
               {[
-                { label: 'Days Logged', value: `${daysWithMeals}/7`, sub: 'this week' },
-                { label: 'Avg Calories', value: avgCal.toLocaleString(), sub: 'kcal/day' },
-                { label: 'Calorie Goal', value: profile.calorie_goal.toLocaleString(), sub: 'kcal/day' },
-              ].map(({ label, value, sub }) => (
+                { label: 'Days Logged', value: `${daysWithMeals}/7`, sub: 'this week', icon: <IconCalendarStats size={18} stroke={1.5} className="text-gray-400" /> },
+                { label: 'Avg Calories', value: avgCal.toLocaleString(), sub: 'kcal/day', icon: <IconFlame size={18} stroke={1.5} className="text-teal-400" /> },
+                { label: 'Calorie Goal', value: profile.calorie_goal.toLocaleString(), sub: 'kcal/day', icon: <IconTarget size={18} stroke={1.5} className="text-blue-400" /> },
+              ].map(({ label, value, sub, icon }) => (
                 <div key={label} className="bg-gray-50 rounded-2xl p-3 text-center">
+                  <div className="flex justify-center mb-1">{icon}</div>
                   <p className="text-lg font-bold text-gray-900">{value}</p>
                   <p className="text-xs text-gray-400 mt-0.5">{sub}</p>
                 </div>
@@ -415,7 +420,10 @@ export default function WeekView() {
 
             {/* Dietary Balance */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
-              <p className="text-sm font-bold text-gray-900 mb-3">Dietary Balance</p>
+              <div className="flex items-center gap-1.5 mb-3">
+                <IconChartDonut3 size={16} stroke={1.5} className="text-gray-500" />
+                <p className="text-sm font-bold text-gray-900">Dietary Balance</p>
+              </div>
               <div className="flex items-center gap-5">
                 <DonutChart carbs={weekTotals.carbs_g} protein={weekTotals.protein_g} fats={weekTotals.fats_g} />
                 <div className="flex-1 space-y-3">
@@ -442,7 +450,10 @@ export default function WeekView() {
             {/* Budget & Intake */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
               <div className="flex items-center justify-between mb-2">
-                <p className="text-sm font-bold text-gray-900">Budget & Intake</p>
+                <div className="flex items-center gap-1.5">
+                  <IconTrendingUp size={16} stroke={1.5} className="text-gray-500" />
+                  <p className="text-sm font-bold text-gray-900">Budget & Intake</p>
+                </div>
                 <div className="flex items-center gap-3">
                   <span className="flex items-center gap-1 text-xs text-gray-400">
                     <svg width="16" height="8"><line x1="0" y1="4" x2="16" y2="4" stroke="#3b82f6" strokeWidth="1.5" strokeDasharray="4,2" /></svg>
@@ -460,7 +471,10 @@ export default function WeekView() {
             {/* Meal Calories */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
               <div className="flex items-center justify-between mb-1">
-                <p className="text-sm font-bold text-gray-900">Meal Calories</p>
+                <div className="flex items-center gap-1.5">
+                  <IconChartBar size={16} stroke={1.5} className="text-gray-500" />
+                  <p className="text-sm font-bold text-gray-900">Meal Calories</p>
+                </div>
                 <div className="flex items-center gap-1.5">
                   <span className="text-sm font-bold text-gray-900">{avgCal}</span>
                   <span className="text-xs text-gray-400">avg kcal</span>
@@ -473,15 +487,15 @@ export default function WeekView() {
 
             {/* Per-macro cards */}
             {[
-              { label: 'Carbs', macroKey: 'carbs_g', goalG: profile.carbs_goal_g, color: '#3b82f6', avg: avgCarbs, prevAvg: prevAvgCarbs },
-              { label: 'Protein', macroKey: 'protein_g', goalG: profile.protein_goal_g, color: '#8b5cf6', avg: avgProtein, prevAvg: prevAvgProtein },
-              { label: 'Fat', macroKey: 'fats_g', goalG: profile.fats_goal_g, color: '#f97316', avg: avgFats, prevAvg: prevAvgFats },
-            ].map(({ label, macroKey, goalG, color, avg, prevAvg }) => {
+              { label: 'Carbs', macroKey: 'carbs_g', goalG: profile.carbs_goal_g, color: '#3b82f6', avg: avgCarbs, prevAvg: prevAvgCarbs, icon: <IconBread size={15} stroke={1.5} color="#3b82f6" /> },
+              { label: 'Protein', macroKey: 'protein_g', goalG: profile.protein_goal_g, color: '#8b5cf6', avg: avgProtein, prevAvg: prevAvgProtein, icon: <IconMeat size={15} stroke={1.5} color="#8b5cf6" /> },
+              { label: 'Fat', macroKey: 'fats_g', goalG: profile.fats_goal_g, color: '#f97316', avg: avgFats, prevAvg: prevAvgFats, icon: <IconDroplet size={15} stroke={1.5} color="#f97316" /> },
+            ].map(({ label, macroKey, goalG, color, avg, prevAvg, icon }) => {
               const targetPct = goalG > 0 ? Math.round((avg / goalG) * 100) : 0
               return (
                 <div key={label} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
                   <div className="flex items-center justify-between mb-1">
-                    <p className="text-sm font-bold text-gray-900">{label}</p>
+                    <div className="flex items-center gap-1.5">{icon}<p className="text-sm font-bold text-gray-900">{label}</p></div>
                     <div className="flex items-center gap-1.5">
                       <span className="text-sm font-bold text-gray-900">{avg}g</span>
                       <span className="text-xs text-gray-400">avg</span>

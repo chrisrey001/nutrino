@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { MEAL_TYPES } from '../lib/utils'
+import { getMealIcon } from '../lib/mealIcons'
 
 function MacroInput({ label, value, onChange, unit }) {
   return (
@@ -118,10 +119,10 @@ export default function EditMealModal({ meal, onClose, onSaved }) {
           <div className="grid grid-cols-3 gap-2">
             {MEAL_TYPES.map(m => (
               <button key={m.value} onClick={() => setMealType(m.value)}
-                className={`py-2 px-2 rounded-xl text-xs font-medium transition-colors ${
+                className={`py-2 px-2 rounded-xl text-xs font-medium transition-colors flex items-center justify-center gap-1 ${
                   mealType === m.value ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-600'
                 }`}>
-                {m.emoji} {m.label}
+                {getMealIcon(m.value, 13)} {m.label}
               </button>
             ))}
           </div>

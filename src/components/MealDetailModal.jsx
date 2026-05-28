@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { getMealMeta } from '../lib/utils'
+import { getMealIcon } from '../lib/mealIcons'
 import { supabase } from '../lib/supabase'
+import { IconStar, IconStarFilled, IconSearch } from '@tabler/icons-react'
 
 const DISMISS_THRESHOLD = 140
 const VELOCITY_THRESHOLD = 0.5
@@ -55,8 +57,8 @@ function SaveFavoriteButton({ meal, onSave }) {
   const handle = async () => { await onSave(meal); setSaved(true) }
   return (
     <button onClick={handle} disabled={saved}
-      className="w-full h-12 bg-gray-100 text-gray-800 rounded-2xl text-sm font-semibold active:bg-gray-200 transition-colors disabled:text-gray-400">
-      {saved ? '⭐ Saved to Favorites!' : '⭐ Save as Favorite'}
+      className="w-full h-12 bg-gray-100 text-gray-800 rounded-2xl text-sm font-semibold active:bg-gray-200 transition-colors disabled:text-gray-400 flex items-center justify-center gap-2">
+      {saved ? <><IconStarFilled size={16} className="text-yellow-500" /> Saved to Favorites!</> : <><IconStar size={16} /> Save as Favorite</>}
     </button>
   )
 }
@@ -219,8 +221,8 @@ export default function MealDetailModal({ meal, onClose, onEdit, onDelete, onLog
                 <img src={mealData.image_url} alt="" className="w-full rounded-2xl object-cover max-h-64" />
               </div>
             ) : (
-              <div className="mx-3 mb-4 h-28 bg-green-50 rounded-2xl flex items-center justify-center text-4xl">
-                {meta.emoji}
+              <div className="mx-3 mb-4 h-28 bg-green-50 rounded-2xl flex items-center justify-center text-green-400">
+                {getMealIcon(mealData.meal_type, 48)}
               </div>
             )}
 
@@ -249,8 +251,8 @@ export default function MealDetailModal({ meal, onClose, onEdit, onDelete, onLog
                 {mealData.items.map((item, i) => (
                   <div key={i} className="bg-gray-50 rounded-2xl p-3">
                     <div className="flex items-center gap-2.5 mb-2.5">
-                      <div className="w-9 h-9 bg-white border border-gray-100 rounded-xl flex items-center justify-center text-base flex-shrink-0 shadow-sm">
-                        🔍
+                      <div className="w-9 h-9 bg-white border border-gray-100 rounded-xl flex items-center justify-center text-gray-400 flex-shrink-0 shadow-sm">
+                        <IconSearch size={16} stroke={1.5} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-gray-900 text-sm font-medium truncate">{item.name}</p>
