@@ -56,6 +56,22 @@ function textPrompt(description, mealType) {
 }
 
 function validateMacroConsistency(data) {
+  if (Array.isArray(data.items) && data.items.length > 0) {
+    // Recalculate each item's calories from its own macros (Atwater 4-4-9)
+    data.items = data.items.map(item => ({
+      ...item,
+      calories: Math.round(
+        (item.carbs_g || 0) * 4 + (item.protein_g || 0) * 4 + (item.fats_g || 0) * 9
+      )
+    }))
+    // Top-level totals are the sum of items — prevents header/item mismatch
+    data.total_calories = data.items.reduce((s, it) => s + (it.calories || 0), 0)
+    data.total_carbs_g = Math.round(data.items.reduce((s, it) => s + (it.carbs_g || 0), 0) * 10) / 10
+    data.total_protein_g = Math.round(data.items.reduce((s, it) => s + (it.protein_g || 0), 0) * 10) / 10
+    data.total_fats_g = Math.round(data.items.reduce((s, it) => s + (it.fats_g || 0), 0) * 10) / 10
+    return data
+  }
+  // No items: guard against inflated free-form calorie estimates
   const calculatedCal = Math.round(
     (data.total_carbs_g || 0) * 4 + (data.total_protein_g || 0) * 4 + (data.total_fats_g || 0) * 9
   )

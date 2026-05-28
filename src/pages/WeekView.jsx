@@ -182,7 +182,8 @@ function MacroDailyChart({ weekDates, mealsByDate, macroKey, goalG, color }) {
 
 export default function WeekView() {
   const [weekOffset, setWeekOffset] = useState(0)
-  const [exporting, setExporting] = useState(false)
+  const [generating, setGenerating] = useState(false)
+  const [pdfReady, setPdfReady] = useState(null)
   const [aiInsight, setAiInsight] = useState(null)
   const [insightLoading, setInsightLoading] = useState(false)
   const { profile } = useProfile()
@@ -294,26 +295,40 @@ export default function WeekView() {
     return `${s.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${e.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`
   })()
 
-  const handleExport = async () => {
-    setExporting(true)
+  const handleGenerate = async () => {
+    setGenerating(true)
+    setPdfReady(null)
     try {
-      const { blob, filename } = await generateWeeklyPDF(weekDates, mealsByDate, profile)
-      const file = new File([blob], filename, { type: 'application/pdf' })
-      if (navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file], title: 'Nutrino Weekly Report' })
-      } else {
-        const url = URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = filename
-        a.click()
-        URL.revokeObjectURL(url)
-      }
+      const result = await generateWeeklyPDF(weekDates, mealsByDate, profile)
+      setPdfReady(result)
     } catch (err) {
-      if (err.name !== 'AbortError') alert('Export failed: ' + err.message)
+      alert('Export failed: ' + err.message)
     } finally {
-      setExporting(false)
+      setGenerating(false)
     }
+  }
+
+  // Called from a direct button tap so navigator.share() fires within a fresh user gesture
+  const handleShare = () => {
+    if (!pdfReady) return
+    const { blob, filename } = pdfReady
+    const file = new File([blob], filename, { type: 'application/pdf' })
+    if (navigator.canShare?.({ files: [file] })) {
+      navigator.share({ files: [file], title: 'Nutrino Weekly Report' })
+        .then(() => setPdfReady(null))
+        .catch(err => { if (err.name !== 'AbortError') downloadPdfBlob(blob, filename) })
+    } else {
+      downloadPdfBlob(blob, filename)
+    }
+  }
+
+  function downloadPdfBlob(blob, filename) {
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url; a.download = filename
+    document.body.appendChild(a); a.click()
+    document.body.removeChild(a)
+    setTimeout(() => URL.revokeObjectURL(url), 60000)
   }
 
   function TrendBadge({ current, prev }) {
@@ -496,29 +511,49 @@ export default function WeekView() {
               )
             })}
 
-            {/* Export / Share PDF */}
-            <button
-              onClick={handleExport}
-              disabled={exporting}
-              className="w-full h-12 bg-green-600 text-white rounded-2xl text-sm font-semibold disabled:opacity-40 flex items-center justify-center gap-2"
-            >
-              {exporting ? (
-                <>
-                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                  </svg>
-                  Generating PDF…
-                </>
-              ) : (
-                <>
+            {/* Export / Share PDF — two-step to satisfy iOS user-gesture requirement */}
+            {!pdfReady ? (
+              <button
+                onClick={handleGenerate}
+                disabled={generating}
+                className="w-full h-12 bg-green-600 text-white rounded-2xl text-sm font-semibold disabled:opacity-40 flex items-center justify-center gap-2"
+              >
+                {generating ? (
+                  <>
+                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                    </svg>
+                    Generating PDF…
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Generate PDF Report
+                  </>
+                )}
+              </button>
+            ) : (
+              <div className="space-y-2">
+                <button
+                  onClick={handleShare}
+                  className="w-full h-12 bg-green-600 text-white rounded-2xl text-sm font-semibold flex items-center justify-center gap-2"
+                >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                   </svg>
                   Share / Download PDF
-                </>
-              )}
-            </button>
+                </button>
+                <button
+                  onClick={() => setPdfReady(null)}
+                  className="w-full text-sm text-gray-400 text-center py-1"
+                >
+                  Regenerate
+                </button>
+              </div>
+            )}
           </>
         )}
       </div>
