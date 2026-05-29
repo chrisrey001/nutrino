@@ -215,17 +215,22 @@ export default function LogMeal() {
           </div>
         )}
 
-        {/* Text input — context for photo, or primary input for text mode */}
+        {/* Text input — details to sharpen the photo estimate, or primary input for text mode */}
         {showInitialText && (
           <div>
-            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-2">
-              {imagePreview ? 'Add context (optional)' : 'Describe your meal'}
+            <label className="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1">
+              {imagePreview ? 'Add details to sharpen the estimate (optional)' : 'Describe your meal'}
             </label>
+            <p className="text-xs text-gray-400 mb-2">
+              {imagePreview
+                ? 'Sent to the AI along with your photo. Mention portions or ingredients the camera can’t judge for a more accurate estimate.'
+                : 'The AI estimates calories and macros from your description.'}
+            </p>
             <textarea
               value={textInput}
               onChange={e => { setTextInput(e.target.value); setError('') }}
               placeholder={imagePreview
-                ? 'e.g. large portion, added extra cheese, no dressing…'
+                ? 'e.g. about ½ a chicken breast · cooked in 1 tbsp oil · no dressing'
                 : 'e.g. 2 scrambled eggs, whole wheat toast, black coffee'}
               rows={3}
               className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
@@ -265,7 +270,7 @@ export default function LogMeal() {
               <label className="text-xs font-medium text-gray-500 block mb-1">Description</label>
               <textarea
                 value={description}
-                onChange={e => { setDescription(e.target.value); setError('') }}
+                onChange={e => { setDescription(e.target.value); if (error) setError('') }}
                 placeholder="e.g. zucchini bread, 1 slice"
                 rows={2}
                 className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-green-500"
