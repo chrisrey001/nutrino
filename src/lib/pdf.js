@@ -392,53 +392,92 @@ export function buildReportHTML(weekDates, mealsByDate, profile) {
     </div>`
 }
 
-// Render the report into an isolated, self-contained iframe and print THAT.
-// The iframe document contains nothing but the report, so there is no live-DOM
-// media-query swap to fail and nothing to capture-as-blank — which is what made
-// iOS produce an empty PDF. On iOS this still routes through the native print/
-// share sheet (Save to Files / Mail / Messages / AirDrop) with crisp vectors.
-export async function printReport(html) {
-  const FRAME_ID = 'report-print-frame'
-  document.getElementById(FRAME_ID)?.remove()
+// Fetch each cross-origin meal photo and swap it for an inline base64 data URL.
+// html2canvas rasterizes the DOM; a cross-origin <img> (Supabase Storage) taints
+// the canvas and silently yields a blank PDF, which was a recurring failure mode.
+// Inlining the bytes first removes the cross-origin pixels entirely. A photo that
+// can't be fetched is dropped rather than left to taint the whole page.
+async function inlineImages(root) {
+  const imgs = Array.from(root.querySelectorAll('img'))
+  await Promise.all(imgs.map(async (img) => {
+    const src = img.getAttribute('src')
+    if (!src || src.startsWith('data:')) return
+    try {
+      const res = await fetch(src, { mode: 'cors', cache: 'force-cache' })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const blob = await res.blob()
+      const dataUrl = await new Promise((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(reader.result)
+        reader.onerror = reject
+        reader.readAsDataURL(blob)
+      })
+      img.removeAttribute('crossorigin')
+      img.src = dataUrl
+      await img.decode().catch(() => {})
+    } catch {
+      img.remove()
+    }
+  }))
+}
 
-  const iframe = document.createElement('iframe')
-  iframe.id = FRAME_ID
-  iframe.setAttribute('aria-hidden', 'true')
-  // Off-screen but fully rendered (display:none would print blank). A4 @ 96dpi.
-  iframe.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;height:1123px;border:0;'
-  document.body.appendChild(iframe)
+// Generate the weekly report as a real PDF and hand it to the OS.
+//
+// iOS standalone (home-screen) PWAs cannot use window.print() — it produces a
+// blank document, which is what we were fighting. The reliable, Apple-aligned
+// path is to build an actual PDF blob client-side (html2pdf = html2canvas +
+// jsPDF) and pass it to the native share sheet via the Web Share API
+// (Save to Files / Mail / Messages / AirDrop). Where file sharing isn't
+// available (most desktop browsers) we fall back to a direct download.
+export async function exportReport(html) {
+  const container = document.createElement('div')
+  // Off-screen but laid out at A4 width (~794px @ 96dpi) so html2canvas renders
+  // the real layout. display:none would give it zero size and a blank capture.
+  container.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;background:#ffffff;'
+  container.innerHTML = html
+  document.body.appendChild(container)
 
-  const doc = iframe.contentWindow.document
-  doc.open()
-  doc.write(`<!doctype html><html><head><meta charset="utf-8">
-    <style>
-      @page { size: A4; margin: 8mm; }
-      html, body { margin: 0; padding: 0; background: #fff; }
-      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    </style>
-  </head><body>${html}</body></html>`)
-  doc.close()
+  // Lazy-load the heavy PDF toolkit (html2canvas + jsPDF, ~600KB) only when the
+  // user actually exports, so it stays out of the initial PWA bundle.
+  const { default: html2pdf } = await import('html2pdf.js')
 
-  // Wait for the iframe document to be ready (load may not fire for doc.write,
-  // so cap the wait), then wait for images to decode — but never let a slow or
-  // broken photo block the print sheet from opening.
-  await new Promise(resolve => {
-    if (doc.readyState === 'complete') return resolve()
-    iframe.addEventListener('load', resolve, { once: true })
-    setTimeout(resolve, 1000)
-  })
-
-  const imgs = Array.from(doc.images)
-  if (imgs.length) {
-    const ready = Promise.all(imgs.map(img => img.decode().catch(() => {})))
-    const timeout = new Promise(resolve => setTimeout(resolve, 2500))
-    await Promise.race([ready, timeout])
+  let blob
+  try {
+    await inlineImages(container)
+    blob = await html2pdf().set({
+      margin: 8,
+      image: { type: 'jpeg', quality: 0.95 },
+      html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      // Honour the report's CSS page-break-before so the Daily Log starts fresh.
+      pagebreak: { mode: ['css', 'legacy'] },
+    }).from(container).outputPdf('blob')
+  } finally {
+    container.remove()
   }
 
-  iframe.contentWindow.focus()
-  iframe.contentWindow.print()
+  const file = new File([blob], 'nutrino-weekly-report.pdf', { type: 'application/pdf' })
 
-  // window.print() is non-blocking on iOS (capture happens when the user picks
-  // Save/Share), so defer removal well past that point.
-  setTimeout(() => iframe.remove(), 60000)
+  // Native share sheet (the iOS/PWA path). canShare guards against browsers that
+  // expose navigator.share but reject file payloads.
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: 'Nutrino Weekly Report' })
+      return
+    } catch (err) {
+      // User dismissed the sheet — that's a completed action, not an error.
+      if (err && err.name === 'AbortError') return
+      // Otherwise fall through to download.
+    }
+  }
+
+  // Fallback: direct download (desktop and any browser without file sharing).
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = 'nutrino-weekly-report.pdf'
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  setTimeout(() => URL.revokeObjectURL(url), 10000)
 }

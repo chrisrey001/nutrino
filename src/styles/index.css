@@ -18,6 +18,6 @@
   }
 }
 
-/* PDF export prints from a self-contained iframe (see printReport in
-   src/lib/pdf.js); its @page/color-adjust styles live in that document,
-   so no app-level print rules are needed here. */
+/* PDF export is generated entirely in JS (html2pdf -> blob -> Web Share /
+   download; see exportReport in src/lib/pdf.js), so no app-level print or
+   @page rules are needed here. */
