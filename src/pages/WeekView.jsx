@@ -3,7 +3,7 @@ import { useMealsRange } from '../hooks/useMealsRange'
 import { useProfile } from '../hooks/useProfile'
 import NutrinoLogo from '../components/NutrinoLogo'
 import { getWeekDates, sumMacros, toLocalDateString, generateWeeklyNote, formatTime } from '../lib/utils'
-import { generateWeeklyPDF } from '../lib/pdf'
+import { buildReportHTML, exportReport } from '../lib/pdf'
 import { generateWeekInsight } from '../lib/gemini'
 import {
   IconSparkles, IconChartBar, IconCalendarStats, IconFlame, IconTarget,
@@ -187,6 +187,7 @@ function MacroDailyChart({ weekDates, mealsByDate, macroKey, goalG, color }) {
 export default function WeekView() {
   const [weekOffset, setWeekOffset] = useState(0)
   const [exporting, setExporting] = useState(false)
+  const [exportError, setExportError] = useState(null)
   const [aiInsight, setAiInsight] = useState(null)
   const [insightLoading, setInsightLoading] = useState(false)
   const { profile } = useProfile()
@@ -299,22 +300,13 @@ export default function WeekView() {
   })()
 
   const handleExport = async () => {
+    setExportError(null)
     setExporting(true)
     try {
-      const { blob, filename } = await generateWeeklyPDF(weekDates, mealsByDate, profile)
-      const file = new File([blob], filename, { type: 'application/pdf' })
-      if (navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ files: [file], title: 'Nutrino Weekly Report' })
-      } else {
-        const url = URL.createObjectURL(blob)
-        const a = document.createElement('a')
-        a.href = url
-        a.download = filename
-        a.click()
-        URL.revokeObjectURL(url)
-      }
-    } catch (err) {
-      if (err.name !== 'AbortError') alert('Export failed: ' + err.message)
+      const html = buildReportHTML(weekDates, mealsByDate, profile)
+      await exportReport(html)
+    } catch {
+      setExportError('Could not generate the report. Please try again.')
     } finally {
       setExporting(false)
     }
@@ -510,7 +502,7 @@ export default function WeekView() {
               )
             })}
 
-            {/* Export / Share PDF */}
+            {/* Export weekly report via native iOS share/print sheet */}
             <button
               onClick={handleExport}
               disabled={exporting}
@@ -522,17 +514,24 @@ export default function WeekView() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
                   </svg>
-                  Generating PDF…
+                  Preparing report…
                 </>
               ) : (
                 <>
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                   </svg>
-                  Share / Download PDF
+                  Save / Share Report
                 </>
               )}
             </button>
+            {exportError ? (
+              <p className="text-xs text-red-500 text-center mt-2">{exportError}</p>
+            ) : (
+              <p className="text-xs text-gray-400 text-center mt-2">
+                Opens the iOS share sheet — choose Mail, Messages, or Save to Files.
+              </p>
+            )}
           </>
         )}
       </div>

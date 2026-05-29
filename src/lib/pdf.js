@@ -1,33 +1,6 @@
-import html2pdf from 'html2pdf.js'
 import { formatDate, formatShortDate, sumMacros, generateDailyNote, generateWeeklyNote, getMealMeta } from './utils'
 
 // --- Utilities ---
-
-async function imageUrlToBase64(url) {
-  try {
-    const res = await fetch(url)
-    const blob = await res.blob()
-    return await new Promise((resolve) => {
-      const reader = new FileReader()
-      reader.onload = () => resolve(reader.result)
-      reader.readAsDataURL(blob)
-    })
-  } catch {
-    return null
-  }
-}
-
-async function buildImageCache(mealsByDate) {
-  const cache = {}
-  for (const meals of Object.values(mealsByDate)) {
-    for (const meal of meals) {
-      if (meal.image_url && !cache[meal.image_url]) {
-        cache[meal.image_url] = await imageUrlToBase64(meal.image_url)
-      }
-    }
-  }
-  return cache
-}
 
 function macroBar(eaten, goal, color) {
   const pct = Math.min(100, goal > 0 ? Math.round((eaten / goal) * 100) : 0)
@@ -300,17 +273,16 @@ function buildMacroTargetsTableHTML(avgCarbs, avgProtein, avgFats, goals) {
     </div>`
 }
 
-async function buildDailySectionHTML(date, meals, goals, imageCache) {
+function buildDailySectionHTML(date, meals, goals) {
   if (meals.length === 0) return ''
   const t = sumMacros(meals)
   const dayNote = generateDailyNote(t, goals)
   const dayLabelFull = formatDate(date)
 
-  const mealRows = (await Promise.all(meals.map(async meal => {
+  const mealRows = meals.map(meal => {
     const meta = getMealMeta(meal.meal_type)
-    const imgSrc = imageCache[meal.image_url]
-    const imgTag = imgSrc
-      ? `<img src="${imgSrc}" style="width:72px;height:72px;object-fit:cover;border-radius:6px;margin-right:10px;flex-shrink:0;" />`
+    const imgTag = meal.image_url
+      ? `<img src="${meal.image_url}" crossorigin="anonymous" style="width:72px;height:72px;object-fit:cover;border-radius:6px;margin-right:10px;flex-shrink:0;" />`
       : `<div style="width:72px;height:72px;background:#f0fdf4;border-radius:6px;margin-right:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px;">${meta.emoji}</div>`
 
     const itemRows = (meal.items || []).map(item => `
@@ -357,7 +329,7 @@ async function buildDailySectionHTML(date, meals, goals, imageCache) {
           </tfoot>
         </table>` : ''}
       </div>`
-  }))).join('')
+  }).join('')
 
   return `
     <div style="margin-top:20px;page-break-inside:avoid;">
@@ -374,7 +346,7 @@ async function buildDailySectionHTML(date, meals, goals, imageCache) {
 
 // --- Main Export ---
 
-export async function generateWeeklyPDF(weekDates, mealsByDate, profile) {
+export function buildReportHTML(weekDates, mealsByDate, profile) {
   const goals = {
     calorie_goal: profile.calorie_goal || 2100,
     carbs_goal_g: profile.carbs_goal_g || 131,
@@ -402,44 +374,110 @@ export async function generateWeeklyPDF(weekDates, mealsByDate, profile) {
   const fatPct = macroCalsTotal > 0 ? Math.round((fatsCal / macroCalsTotal) * 100) : 0
 
   const weekNote = generateWeeklyNote(weekTotals, goals, daysWithMeals)
-  const imageCache = await buildImageCache(mealsByDate)
 
-  const dailySections = (await Promise.all(
-    weekDates.map(date => buildDailySectionHTML(date, mealsByDate[date] || [], goals, imageCache))
-  )).join('')
+  const dailySections = weekDates
+    .map(date => buildDailySectionHTML(date, mealsByDate[date] || [], goals))
+    .join('')
 
-  const html = `
+  return `
     <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#111827;max-width:720px;margin:0 auto;padding:24px;background:white;">
       ${buildHeaderHTML(weekStart, weekEnd, profile)}
       ${buildStatBoxesHTML(daysWithMeals, avgCal, goals)}
       ${buildChartsRowHTML(weekDates, mealsByDate, avgCarbs, avgProtein, avgFats, carbsPct, protPct, fatPct, goals)}
       ${buildWeeklyAnalysisHTML(weekNote)}
       ${buildMacroTargetsTableHTML(avgCarbs, avgProtein, avgFats, goals)}
-      <div style="page-break-before:always;"></div>
-      <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#6b7280;margin-bottom:4px;">Daily Log</div>
+      <div style="page-break-before:always;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#6b7280;margin-bottom:4px;">Daily Log</div>
       <div style="border-bottom:2px solid #16a34a;margin-bottom:4px;"></div>
       ${dailySections || '<div style="color:#9ca3af;font-size:13px;padding:20px 0;">No meals logged this week.</div>'}
     </div>`
+}
 
-  const el = document.createElement('div')
-  el.innerHTML = html
-  el.style.cssText = 'position:absolute;left:-9999px;top:0;background:white;'
-  document.body.appendChild(el)
+// Fetch each cross-origin meal photo and swap it for an inline base64 data URL.
+// html2canvas rasterizes the DOM; a cross-origin <img> (Supabase Storage) taints
+// the canvas and silently yields a blank PDF, which was a recurring failure mode.
+// Inlining the bytes first removes the cross-origin pixels entirely. A photo that
+// can't be fetched is dropped rather than left to taint the whole page.
+async function inlineImages(root) {
+  const imgs = Array.from(root.querySelectorAll('img'))
+  await Promise.all(imgs.map(async (img) => {
+    const src = img.getAttribute('src')
+    if (!src || src.startsWith('data:')) return
+    try {
+      const res = await fetch(src, { mode: 'cors', cache: 'force-cache' })
+      if (!res.ok) throw new Error(`HTTP ${res.status}`)
+      const blob = await res.blob()
+      const dataUrl = await new Promise((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(reader.result)
+        reader.onerror = reject
+        reader.readAsDataURL(blob)
+      })
+      img.removeAttribute('crossorigin')
+      img.src = dataUrl
+      await img.decode().catch(() => {})
+    } catch {
+      img.remove()
+    }
+  }))
+}
 
-  const filename = `nutrino-week-${weekStart}.pdf`
-  const worker = html2pdf().set({
-    margin: [10, 10],
-    filename,
-    image: { type: 'jpeg', quality: 0.88 },
-    html2canvas: { scale: 2, useCORS: true, allowTaint: true, logging: false },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-  }).from(el)
+// Generate the weekly report as a real PDF and hand it to the OS.
+//
+// iOS standalone (home-screen) PWAs cannot use window.print() — it produces a
+// blank document, which is what we were fighting. The reliable, Apple-aligned
+// path is to build an actual PDF blob client-side (html2pdf = html2canvas +
+// jsPDF) and pass it to the native share sheet via the Web Share API
+// (Save to Files / Mail / Messages / AirDrop). Where file sharing isn't
+// available (most desktop browsers) we fall back to a direct download.
+export async function exportReport(html) {
+  const container = document.createElement('div')
+  // Off-screen but laid out at A4 width (~794px @ 96dpi) so html2canvas renders
+  // the real layout. display:none would give it zero size and a blank capture.
+  container.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;background:#ffffff;'
+  container.innerHTML = html
+  document.body.appendChild(container)
+
+  // Lazy-load the heavy PDF toolkit (html2canvas + jsPDF, ~600KB) only when the
+  // user actually exports, so it stays out of the initial PWA bundle.
+  const { default: html2pdf } = await import('html2pdf.js')
 
   let blob
-  await worker.toPdf().get('pdf').then(function (pdf) {
-    blob = pdf.output('blob')
-  })
+  try {
+    await inlineImages(container)
+    blob = await html2pdf().set({
+      margin: 8,
+      image: { type: 'jpeg', quality: 0.95 },
+      html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      // Honour the report's CSS page-break-before so the Daily Log starts fresh.
+      pagebreak: { mode: ['css', 'legacy'] },
+    }).from(container).outputPdf('blob')
+  } finally {
+    container.remove()
+  }
 
-  document.body.removeChild(el)
-  return { blob, filename }
+  const file = new File([blob], 'nutrino-weekly-report.pdf', { type: 'application/pdf' })
+
+  // Native share sheet (the iOS/PWA path). canShare guards against browsers that
+  // expose navigator.share but reject file payloads.
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: 'Nutrino Weekly Report' })
+      return
+    } catch (err) {
+      // User dismissed the sheet — that's a completed action, not an error.
+      if (err && err.name === 'AbortError') return
+      // Otherwise fall through to download.
+    }
+  }
+
+  // Fallback: direct download (desktop and any browser without file sharing).
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = 'nutrino-weekly-report.pdf'
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  setTimeout(() => URL.revokeObjectURL(url), 10000)
 }
