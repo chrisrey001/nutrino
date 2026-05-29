@@ -386,52 +386,59 @@ export function buildReportHTML(weekDates, mealsByDate, profile) {
       ${buildChartsRowHTML(weekDates, mealsByDate, avgCarbs, avgProtein, avgFats, carbsPct, protPct, fatPct, goals)}
       ${buildWeeklyAnalysisHTML(weekNote)}
       ${buildMacroTargetsTableHTML(avgCarbs, avgProtein, avgFats, goals)}
-      <div style="page-break-before:always;"></div>
-      <div style="font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#6b7280;margin-bottom:4px;">Daily Log</div>
+      <div style="page-break-before:always;font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#6b7280;margin-bottom:4px;">Daily Log</div>
       <div style="border-bottom:2px solid #16a34a;margin-bottom:4px;"></div>
       ${dailySections || '<div style="color:#9ca3af;font-size:13px;padding:20px 0;">No meals logged this week.</div>'}
     </div>`
 }
 
-// Render the report into a print container and trigger the native print sheet.
-// On iOS this opens the system sheet (Save to Files / Mail / Messages / AirDrop),
-// producing crisp vector output without html2canvas.
+// Render the report into an isolated, self-contained iframe and print THAT.
+// The iframe document contains nothing but the report, so there is no live-DOM
+// media-query swap to fail and nothing to capture-as-blank — which is what made
+// iOS produce an empty PDF. On iOS this still routes through the native print/
+// share sheet (Save to Files / Mail / Messages / AirDrop) with crisp vectors.
 export async function printReport(html) {
-  const PRINT_ID = 'report-print-root'
-  document.getElementById(PRINT_ID)?.remove()
+  const FRAME_ID = 'report-print-frame'
+  document.getElementById(FRAME_ID)?.remove()
 
-  const el = document.createElement('div')
-  el.id = PRINT_ID
-  el.innerHTML = html
-  document.body.appendChild(el)
+  const iframe = document.createElement('iframe')
+  iframe.id = FRAME_ID
+  iframe.setAttribute('aria-hidden', 'true')
+  // Off-screen but fully rendered (display:none would print blank). A4 @ 96dpi.
+  iframe.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;height:1123px;border:0;'
+  document.body.appendChild(iframe)
 
-  // Wait for photos to be decoded so they're present in the printout, but never
-  // let a slow/broken image block the print sheet from opening.
-  const imgs = Array.from(el.querySelectorAll('img'))
+  const doc = iframe.contentWindow.document
+  doc.open()
+  doc.write(`<!doctype html><html><head><meta charset="utf-8">
+    <style>
+      @page { size: A4; margin: 8mm; }
+      html, body { margin: 0; padding: 0; background: #fff; }
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    </style>
+  </head><body>${html}</body></html>`)
+  doc.close()
+
+  // Wait for the iframe document to be ready (load may not fire for doc.write,
+  // so cap the wait), then wait for images to decode — but never let a slow or
+  // broken photo block the print sheet from opening.
+  await new Promise(resolve => {
+    if (doc.readyState === 'complete') return resolve()
+    iframe.addEventListener('load', resolve, { once: true })
+    setTimeout(resolve, 1000)
+  })
+
+  const imgs = Array.from(doc.images)
   if (imgs.length) {
     const ready = Promise.all(imgs.map(img => img.decode().catch(() => {})))
     const timeout = new Promise(resolve => setTimeout(resolve, 2500))
     await Promise.race([ready, timeout])
   }
 
-  // Clean up the injected node exactly once. iOS doesn't reliably fire
-  // 'afterprint', so we also listen for the print media query closing,
-  // window focus returning, and a fallback timeout.
-  let cleaned = false
-  const cleanup = () => {
-    if (cleaned) return
-    cleaned = true
-    el.remove()
-    window.removeEventListener('afterprint', cleanup)
-    window.removeEventListener('focus', cleanup)
-    mql?.removeEventListener?.('change', onMqlChange)
-  }
-  const onMqlChange = (e) => { if (!e.matches) cleanup() }
-  const mql = window.matchMedia?.('print')
-  window.addEventListener('afterprint', cleanup)
-  window.addEventListener('focus', cleanup)
-  mql?.addEventListener?.('change', onMqlChange)
-  setTimeout(cleanup, 60000)
+  iframe.contentWindow.focus()
+  iframe.contentWindow.print()
 
-  window.print()
+  // window.print() is non-blocking on iOS (capture happens when the user picks
+  // Save/Share), so defer removal well past that point.
+  setTimeout(() => iframe.remove(), 60000)
 }
