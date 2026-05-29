@@ -112,7 +112,7 @@ export default function Favorites() {
             <div key={fav.id} className="bg-white rounded-2xl border border-gray-200 px-3 py-3">
               <div className="flex items-center justify-between">
                 <div className="flex-1 min-w-0 pr-3">
-                  <p className="text-sm font-medium text-gray-900 truncate">{fav.name}</p>
+                  <p className="text-sm font-medium text-gray-900 break-words">{fav.name}</p>
                   <p className="text-xs text-gray-400 mt-0.5">
                     {fav.calories} kcal · {Math.round(fav.protein_g)}g P · {Math.round(fav.carbs_g)}g C · {Math.round(fav.fats_g)}g F
                   </p>
