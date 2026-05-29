@@ -335,33 +335,80 @@ export function buildReportDoc(weekDates, mealsByDate, profile, imageMap = {}) {
   return doc
 }
 
-// Browser-only: fetch each meal photo and turn it into a base64 data URL plus
-// natural dimensions, so jsPDF can embed it. Cross-origin Supabase images are
-// fine here — we read the bytes ourselves; failures are skipped silently.
+// Browser-only image loading. Meal photos are a hard requirement of this report,
+// so this is deliberately robust:
+//   1. Bytes are pulled through the authenticated Supabase client (download()),
+//      NOT a raw cross-origin fetch of the public URL. <img> tags load
+//      cross-origin images without CORS, but fetch() needs CORS headers — which
+//      the public object endpoint often does not send, so the previous fetch()
+//      silently failed and every photo was dropped. The SDK request carries the
+//      apikey and goes through the storage API, which returns CORS headers.
+//   2. Each photo is re-encoded via a small canvas to a baseline JPEG. The
+//      source blob is same-origin (object URL), so the canvas is not tainted and
+//      toDataURL() succeeds; this normalizes any camera format/orientation into
+//      something jsPDF can always embed, and caps the size so the PDF stays small.
+const STORAGE_BUCKET = 'meal-photos'
+
+function storagePathFromUrl(url) {
+  const marker = `/object/public/${STORAGE_BUCKET}/`
+  const i = url.indexOf(marker)
+  if (i === -1) return null
+  return decodeURIComponent(url.slice(i + marker.length))
+}
+
+async function fetchImageBlob(url) {
+  try {
+    const path = storagePathFromUrl(url)
+    if (path) {
+      const { supabase } = await import('./supabase')
+      const { data, error } = await supabase.storage.from(STORAGE_BUCKET).download(path)
+      if (!error && data) return data
+    }
+  } catch { /* fall through to direct fetch */ }
+  try {
+    const res = await fetch(url, { mode: 'cors', cache: 'force-cache' })
+    if (res.ok) return await res.blob()
+  } catch { /* give up on this image */ }
+  return null
+}
+
+function blobToJpeg(blob, maxDim = 900, quality = 0.82) {
+  return new Promise((resolve) => {
+    const objUrl = URL.createObjectURL(blob)
+    const img = new Image()
+    img.onload = () => {
+      URL.revokeObjectURL(objUrl)
+      const scale = Math.min(1, maxDim / Math.max(img.naturalWidth, img.naturalHeight || 1))
+      const w = Math.max(1, Math.round((img.naturalWidth || 1) * scale))
+      const h = Math.max(1, Math.round((img.naturalHeight || 1) * scale))
+      try {
+        const canvas = document.createElement('canvas')
+        canvas.width = w
+        canvas.height = h
+        const ctx = canvas.getContext('2d')
+        ctx.fillStyle = '#ffffff'
+        ctx.fillRect(0, 0, w, h)
+        ctx.drawImage(img, 0, 0, w, h)
+        resolve({ dataUrl: canvas.toDataURL('image/jpeg', quality), w, h })
+      } catch {
+        resolve(null)
+      }
+    }
+    img.onerror = () => { URL.revokeObjectURL(objUrl); resolve(null) }
+    img.src = objUrl
+  })
+}
+
 async function loadImages(weekDates, mealsByDate) {
   const urls = [...new Set(
     weekDates.flatMap((d) => (mealsByDate[d] || []).map((m) => m.image_url).filter(Boolean))
   )]
   const map = {}
   await Promise.all(urls.map(async (url) => {
-    try {
-      const res = await fetch(url, { mode: 'cors', cache: 'force-cache' })
-      if (!res.ok) return
-      const blob = await res.blob()
-      const dataUrl = await new Promise((resolve, reject) => {
-        const r = new FileReader()
-        r.onload = () => resolve(r.result)
-        r.onerror = reject
-        r.readAsDataURL(blob)
-      })
-      const dim = await new Promise((resolve) => {
-        const im = new Image()
-        im.onload = () => resolve({ w: im.naturalWidth, h: im.naturalHeight })
-        im.onerror = () => resolve({ w: 1, h: 1 })
-        im.src = dataUrl
-      })
-      map[url] = { dataUrl, w: dim.w, h: dim.h }
-    } catch { /* skip */ }
+    const blob = await fetchImageBlob(url)
+    if (!blob) return
+    const processed = await blobToJpeg(blob)
+    if (processed) map[url] = processed
   }))
   return map
 }
@@ -373,7 +420,10 @@ export async function exportReport(weekDates, mealsByDate, profile) {
   const imageMap = await loadImages(weekDates, mealsByDate)
   const doc = buildReportDoc(weekDates, mealsByDate, profile, imageMap)
   const blob = doc.output('blob')
-  const file = new File([blob], 'nutrino-weekly-report.pdf', { type: 'application/pdf' })
+  // Timestamped filename: iOS Safari has a WebKit bug where repeatedly sharing a
+  // file with the same name can produce a cached/blank payload.
+  const filename = `nutrino-weekly-report-${Date.now()}.pdf`
+  const file = new File([blob], filename, { type: 'application/pdf' })
 
   if (navigator.canShare && navigator.canShare({ files: [file] })) {
     try {
@@ -387,7 +437,7 @@ export async function exportReport(weekDates, mealsByDate, profile) {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = 'nutrino-weekly-report.pdf'
+  a.download = filename
   document.body.appendChild(a)
   a.click()
   a.remove()
