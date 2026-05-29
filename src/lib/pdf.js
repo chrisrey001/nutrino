@@ -1,33 +1,6 @@
-import html2pdf from 'html2pdf.js'
 import { formatDate, formatShortDate, sumMacros, generateDailyNote, generateWeeklyNote, getMealMeta } from './utils'
 
 // --- Utilities ---
-
-async function imageUrlToBase64(url) {
-  try {
-    const res = await fetch(url)
-    const blob = await res.blob()
-    return await new Promise((resolve) => {
-      const reader = new FileReader()
-      reader.onload = () => resolve(reader.result)
-      reader.readAsDataURL(blob)
-    })
-  } catch {
-    return null
-  }
-}
-
-async function buildImageCache(mealsByDate) {
-  const cache = {}
-  for (const meals of Object.values(mealsByDate)) {
-    for (const meal of meals) {
-      if (meal.image_url && !cache[meal.image_url]) {
-        cache[meal.image_url] = await imageUrlToBase64(meal.image_url)
-      }
-    }
-  }
-  return cache
-}
 
 function macroBar(eaten, goal, color) {
   const pct = Math.min(100, goal > 0 ? Math.round((eaten / goal) * 100) : 0)
@@ -300,17 +273,16 @@ function buildMacroTargetsTableHTML(avgCarbs, avgProtein, avgFats, goals) {
     </div>`
 }
 
-async function buildDailySectionHTML(date, meals, goals, imageCache) {
+function buildDailySectionHTML(date, meals, goals) {
   if (meals.length === 0) return ''
   const t = sumMacros(meals)
   const dayNote = generateDailyNote(t, goals)
   const dayLabelFull = formatDate(date)
 
-  const mealRows = (await Promise.all(meals.map(async meal => {
+  const mealRows = meals.map(meal => {
     const meta = getMealMeta(meal.meal_type)
-    const imgSrc = imageCache[meal.image_url]
-    const imgTag = imgSrc
-      ? `<img src="${imgSrc}" style="width:72px;height:72px;object-fit:cover;border-radius:6px;margin-right:10px;flex-shrink:0;" />`
+    const imgTag = meal.image_url
+      ? `<img src="${meal.image_url}" crossorigin="anonymous" style="width:72px;height:72px;object-fit:cover;border-radius:6px;margin-right:10px;flex-shrink:0;" />`
       : `<div style="width:72px;height:72px;background:#f0fdf4;border-radius:6px;margin-right:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px;">${meta.emoji}</div>`
 
     const itemRows = (meal.items || []).map(item => `
@@ -357,7 +329,7 @@ async function buildDailySectionHTML(date, meals, goals, imageCache) {
           </tfoot>
         </table>` : ''}
       </div>`
-  }))).join('')
+  }).join('')
 
   return `
     <div style="margin-top:20px;page-break-inside:avoid;">
@@ -374,7 +346,7 @@ async function buildDailySectionHTML(date, meals, goals, imageCache) {
 
 // --- Main Export ---
 
-export async function generateWeeklyPDF(weekDates, mealsByDate, profile) {
+export function buildReportHTML(weekDates, mealsByDate, profile) {
   const goals = {
     calorie_goal: profile.calorie_goal || 2100,
     carbs_goal_g: profile.carbs_goal_g || 131,
@@ -402,13 +374,12 @@ export async function generateWeeklyPDF(weekDates, mealsByDate, profile) {
   const fatPct = macroCalsTotal > 0 ? Math.round((fatsCal / macroCalsTotal) * 100) : 0
 
   const weekNote = generateWeeklyNote(weekTotals, goals, daysWithMeals)
-  const imageCache = await buildImageCache(mealsByDate)
 
-  const dailySections = (await Promise.all(
-    weekDates.map(date => buildDailySectionHTML(date, mealsByDate[date] || [], goals, imageCache))
-  )).join('')
+  const dailySections = weekDates
+    .map(date => buildDailySectionHTML(date, mealsByDate[date] || [], goals))
+    .join('')
 
-  const html = `
+  return `
     <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#111827;max-width:720px;margin:0 auto;padding:24px;background:white;">
       ${buildHeaderHTML(weekStart, weekEnd, profile)}
       ${buildStatBoxesHTML(daysWithMeals, avgCal, goals)}
@@ -420,26 +391,47 @@ export async function generateWeeklyPDF(weekDates, mealsByDate, profile) {
       <div style="border-bottom:2px solid #16a34a;margin-bottom:4px;"></div>
       ${dailySections || '<div style="color:#9ca3af;font-size:13px;padding:20px 0;">No meals logged this week.</div>'}
     </div>`
+}
+
+// Render the report into a print container and trigger the native print sheet.
+// On iOS this opens the system sheet (Save to Files / Mail / Messages / AirDrop),
+// producing crisp vector output without html2canvas.
+export async function printReport(html) {
+  const PRINT_ID = 'report-print-root'
+  document.getElementById(PRINT_ID)?.remove()
 
   const el = document.createElement('div')
+  el.id = PRINT_ID
   el.innerHTML = html
-  el.style.cssText = 'position:absolute;left:-9999px;top:0;background:white;'
   document.body.appendChild(el)
 
-  const filename = `nutrino-week-${weekStart}.pdf`
-  const worker = html2pdf().set({
-    margin: [10, 10],
-    filename,
-    image: { type: 'jpeg', quality: 0.88 },
-    html2canvas: { scale: 2, useCORS: true, allowTaint: true, logging: false },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-  }).from(el)
+  // Wait for photos to be decoded so they're present in the printout, but never
+  // let a slow/broken image block the print sheet from opening.
+  const imgs = Array.from(el.querySelectorAll('img'))
+  if (imgs.length) {
+    const ready = Promise.all(imgs.map(img => img.decode().catch(() => {})))
+    const timeout = new Promise(resolve => setTimeout(resolve, 2500))
+    await Promise.race([ready, timeout])
+  }
 
-  let blob
-  await worker.toPdf().get('pdf').then(function (pdf) {
-    blob = pdf.output('blob')
-  })
+  // Clean up the injected node exactly once. iOS doesn't reliably fire
+  // 'afterprint', so we also listen for the print media query closing,
+  // window focus returning, and a fallback timeout.
+  let cleaned = false
+  const cleanup = () => {
+    if (cleaned) return
+    cleaned = true
+    el.remove()
+    window.removeEventListener('afterprint', cleanup)
+    window.removeEventListener('focus', cleanup)
+    mql?.removeEventListener?.('change', onMqlChange)
+  }
+  const onMqlChange = (e) => { if (!e.matches) cleanup() }
+  const mql = window.matchMedia?.('print')
+  window.addEventListener('afterprint', cleanup)
+  window.addEventListener('focus', cleanup)
+  mql?.addEventListener?.('change', onMqlChange)
+  setTimeout(cleanup, 60000)
 
-  document.body.removeChild(el)
-  return { blob, filename }
+  window.print()
 }

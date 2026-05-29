@@ -17,3 +17,35 @@
     padding-bottom: max(1rem, env(safe-area-inset-bottom));
   }
 }
+
+/* --- Print-to-PDF: native window.print() weekly report --- */
+/* The report node is injected into <body> at export time. It's hidden
+   on screen and replaces the whole app shell during printing. */
+@media screen {
+  #report-print-root {
+    display: none;
+  }
+}
+
+@media print {
+  #root {
+    display: none !important;
+  }
+  #report-print-root {
+    display: block !important;
+    /* Force background/colored charts to print in Safari */
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  body {
+    background: #fff;
+    padding: 0;
+  }
+}
+
+@page {
+  size: A4;
+  /* 8mm leaves ~194mm printable width so the 720px (~190mm) report,
+     including its full-bleed green header, fits without clipping. */
+  margin: 8mm;
+}
