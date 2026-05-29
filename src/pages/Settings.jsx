@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useProfile } from '../hooks/useProfile'
 import NutrinoLogo from '../components/NutrinoLogo'
-import FavoritesManager from '../components/FavoritesManager'
-import { IconUser, IconTarget, IconStar, IconKey } from '@tabler/icons-react'
+import { IconUser, IconTarget, IconStar, IconKey, IconChevronRight } from '@tabler/icons-react'
 
 export default function Settings() {
+  const navigate = useNavigate()
   const { profile, loading, save } = useProfile()
   const [form, setForm] = useState(profile)
   const [apiKey, setApiKey] = useState('')
@@ -59,8 +60,14 @@ export default function Settings() {
         {/* Favorites */}
         <section className="bg-white rounded-2xl shadow-sm p-4 space-y-3">
           <h2 className="text-sm font-semibold text-gray-700 flex items-center gap-1.5"><IconStar size={15} stroke={1.5} />Favorites</h2>
-          <p className="text-xs text-gray-400">Saved meals for quick logging. Add manually here or from any meal entry.</p>
-          <FavoritesManager />
+          <p className="text-xs text-gray-400">Saved meals for quick logging. Add manually or from any meal entry.</p>
+          <button
+            onClick={() => navigate('/favorites')}
+            className="w-full flex items-center justify-between rounded-xl border border-gray-200 px-3 py-2.5 text-sm font-medium text-gray-700"
+          >
+            Manage favorites
+            <IconChevronRight size={16} stroke={1.8} className="text-gray-400" />
+          </button>
         </section>
 
         {/* API Key */}
