@@ -170,20 +170,15 @@ export default function Dashboard() {
       {isToday && (
         <button
           onClick={() => setShowActionSheet(true)}
-          className="fixed bottom-20 right-4 w-14 h-14 bg-green-600 text-white rounded-full shadow-lg flex items-center justify-center z-30 active:scale-95 transition-transform"
+          className="fixed bottom-24 right-4 w-14 h-14 bg-green-600 text-white rounded-full shadow-lg flex items-center justify-center z-50 active:scale-95 transition-transform"
           aria-label="Log a meal"
         >
-          <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-          </svg>
+          <IconToolsKitchen2 className="w-7 h-7" stroke={2} />
         </button>
       )}
 
       {showActionSheet && (
-        <LogActionSheet
-          onClose={() => setShowActionSheet(false)}
-          onMealAdded={refresh}
-        />
+        <LogActionSheet onClose={() => setShowActionSheet(false)} />
       )}
 
       {viewingMeal && (

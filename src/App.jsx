@@ -5,6 +5,7 @@ import LogMeal from './pages/LogMeal'
 import WeekView from './pages/WeekView'
 import DayDetail from './pages/DayDetail'
 import Settings from './pages/Settings'
+import Favorites from './pages/Favorites'
 
 export default function App() {
   return (
@@ -17,6 +18,7 @@ export default function App() {
           <Route path="/settings" element={<Settings />} />
         </Route>
         <Route path="/log" element={<LogMeal />} />
+        <Route path="/favorites" element={<Favorites />} />
       </Routes>
     </BrowserRouter>
   )

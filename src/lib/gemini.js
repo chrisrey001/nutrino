@@ -35,7 +35,10 @@ function photoPrompt(mealType, textContext) {
     '- Round all numbers to the nearest whole number.',
   ]
   if (mealType) lines.push(`- Meal type: ${mealType}.`)
-  if (textContext) lines.push(`- User context: ${textContext}`)
+  if (textContext) {
+    lines.push(`- User context: ${textContext}`)
+    lines.push('- If the user context specifies a portion size or ingredient (e.g. "half a chicken breast", "cooked in 1 tbsp olive oil", "no dressing"), treat it as ground truth and adjust the quantities and macros accordingly, overriding the visual guess.')
+  }
   lines.push('', 'Return ONLY valid JSON (no markdown, no backticks, no explanation):', SCHEMA)
   return lines.join('\n')
 }
