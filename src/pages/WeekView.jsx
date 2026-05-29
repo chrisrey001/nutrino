@@ -3,7 +3,7 @@ import { useMealsRange } from '../hooks/useMealsRange'
 import { useProfile } from '../hooks/useProfile'
 import NutrinoLogo from '../components/NutrinoLogo'
 import { getWeekDates, sumMacros, toLocalDateString, generateWeeklyNote, formatTime } from '../lib/utils'
-import { buildReportHTML, exportReport } from '../lib/pdf'
+import { exportReport } from '../lib/pdf'
 import { generateWeekInsight } from '../lib/gemini'
 import {
   IconSparkles, IconChartBar, IconCalendarStats, IconFlame, IconTarget,
@@ -303,8 +303,7 @@ export default function WeekView() {
     setExportError(null)
     setExporting(true)
     try {
-      const html = buildReportHTML(weekDates, mealsByDate, profile)
-      await exportReport(html)
+      await exportReport(weekDates, mealsByDate, profile)
     } catch {
       setExportError('Could not generate the report. Please try again.')
     } finally {
