@@ -39,3 +39,8 @@ A mobile-first PWA for personal food logging. User photographs meals, Gemini 2.0
 - Async/await for all API calls
 - Error states handled at component level with try/catch
 - Components under 150 lines; extract hooks to src/hooks/ if needed
+
+## UI / icon rules
+- **Icons:** Always use Tabler icons (`@tabler/icons-react`). Never use emojis as UI icons.
+- **Emojis:** Do not use emojis anywhere in the UI — not in buttons, labels, empty states, or onboarding copy.
+- Use `stroke={1.5}` as the default stroke weight for Tabler icons; increase to `stroke={2}` only for small sizes (≤16px) where detail is needed.

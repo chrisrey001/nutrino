@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useProfile } from '../hooks/useProfile'
 import NutrinoLogo from '../components/NutrinoLogo'
+import { IconCamera, IconPencil, IconStar } from '@tabler/icons-react'
 
 const DEFAULTS = {
   calorie_goal: 2000,
@@ -146,13 +147,15 @@ export default function OnboardingWizard({ onDone }) {
             <h2 className="text-xl font-bold text-gray-900">How it works</h2>
             <div className="space-y-4">
               {[
-                { icon: '📷', title: 'Photo', desc: 'Point your camera at any meal. AI does the math.' },
-                { icon: '✏️', title: 'Describe', desc: "Type what you ate if you don't have a photo." },
-                { icon: '⭐', title: 'Favorites', desc: 'Save meals you eat often for one-tap logging.' },
+                { icon: <IconCamera size={22} stroke={1.5} className="text-green-600" />, title: 'Photo', desc: 'Point your camera at any meal. AI does the math.' },
+                { icon: <IconPencil size={22} stroke={1.5} className="text-green-600" />, title: 'Describe', desc: "Type what you ate if you don't have a photo." },
+                { icon: <IconStar size={22} stroke={1.5} className="text-green-600" />, title: 'Favorites', desc: 'Save meals you eat often for one-tap logging.' },
               ].map(({ icon, title, desc }) => (
                 <div key={title} className="flex items-start gap-3">
-                  <span className="text-2xl leading-none mt-0.5">{icon}</span>
-                  <div>
+                  <div className="w-9 h-9 bg-green-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                    {icon}
+                  </div>
+                  <div className="pt-1">
                     <p className="text-sm font-semibold text-gray-900">{title}</p>
                     <p className="text-xs text-gray-500 mt-0.5">{desc}</p>
                   </div>

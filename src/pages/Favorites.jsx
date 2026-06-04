@@ -109,7 +109,7 @@ export default function Favorites() {
           <p className="text-sm text-gray-400 py-2">Loading…</p>
         ) : favorites.length === 0 && !showAdd ? (
           <div className="flex flex-col items-center justify-center py-10 text-center">
-            <span className="text-4xl mb-3">⭐</span>
+            <IconStar size={48} stroke={1} className="text-gray-300 mb-3" />
             <p className="text-sm text-gray-500 font-medium">No favorites yet</p>
             <p className="text-xs text-gray-400 mt-1">Save a meal from the log screen, or add one manually below.</p>
           </div>
