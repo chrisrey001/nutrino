@@ -1,23 +1,24 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
-import { HARDCODED_USER_ID } from '../lib/utils'
+import { useAuth } from '../contexts/AuthContext'
 
 export function useMeals(date) {
+  const { user } = useAuth()
   const [meals, setMeals] = useState([])
   const [loading, setLoading] = useState(true)
 
   const fetch = useCallback(async () => {
-    if (!date) return
+    if (!date || !user?.id) return
     setLoading(true)
     const { data } = await supabase
       .from('meals')
       .select('*')
-      .eq('user_id', HARDCODED_USER_ID)
+      .eq('user_id', user.id)
       .eq('date', date)
       .order('created_at', { ascending: true })
     setMeals(data || [])
     setLoading(false)
-  }, [date])
+  }, [date, user?.id])
 
   useEffect(() => { fetch() }, [fetch])
 
@@ -25,16 +26,17 @@ export function useMeals(date) {
 }
 
 export function useMealsRange(dates) {
+  const { user } = useAuth()
   const [mealsByDate, setMealsByDate] = useState({})
   const [loading, setLoading] = useState(true)
 
   const fetch = useCallback(async () => {
-    if (!dates?.length) return
+    if (!dates?.length || !user?.id) return
     setLoading(true)
     const { data } = await supabase
       .from('meals')
       .select('*')
-      .eq('user_id', HARDCODED_USER_ID)
+      .eq('user_id', user.id)
       .gte('date', dates[0])
       .lte('date', dates[dates.length - 1])
       .order('created_at', { ascending: true })
@@ -47,7 +49,7 @@ export function useMealsRange(dates) {
     }
     setMealsByDate(byDate)
     setLoading(false)
-  }, [dates?.join(',')])
+  }, [dates?.join(','), user?.id])
 
   useEffect(() => { fetch() }, [fetch])
 

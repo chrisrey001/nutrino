@@ -1,10 +1,11 @@
 import { useState, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { analyzeMeal, analyzeMealText } from '../lib/gemini'
+import { analyzeMeal, analyzeMealText } from '../lib/analyzeWithAI'
 import { useFavorites } from '../hooks/useFavorites'
+import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
 import NutrinoLogo from '../components/NutrinoLogo'
-import { HARDCODED_USER_ID, MEAL_TYPES, toLocalDateString } from '../lib/utils'
+import { MEAL_TYPES, toLocalDateString } from '../lib/utils'
 import { getMealIcon } from '../lib/mealIcons'
 import { IconSparkles, IconChartPie, IconStar, IconStarFilled } from '@tabler/icons-react'
 
@@ -12,6 +13,7 @@ const today = toLocalDateString()
 
 export default function LogMeal() {
   const navigate = useNavigate()
+  const { user } = useAuth()
   const [params] = useSearchParams()
   const fileRef = useRef()
   const mode = params.get('mode') // 'photo' | 'text' | null
@@ -60,16 +62,14 @@ export default function LogMeal() {
   }
 
   const runAnalysis = async (text) => {
-    const apiKey = localStorage.getItem('gemini_api_key')
-    if (!apiKey) { setError('No Gemini API key found. Go to Settings and add your key.'); return }
     setAnalyzing(true)
     setError('')
     try {
       if (imageFile) {
-        const data = await analyzeMeal(imageFile, apiKey, textInput.trim() || null, mealType)
+        const data = await analyzeMeal(imageFile, null, textInput.trim() || null, mealType)
         applyResult(data)
       } else {
-        const data = await analyzeMealText(text, apiKey, mealType)
+        const data = await analyzeMealText(text, null, mealType)
         const textItems = data.items || []
         setItems(textItems)
         const computedCal = textItems.length > 0
@@ -100,7 +100,7 @@ export default function LogMeal() {
       let image_url = null
       if (imageFile) {
         const ext = imageFile.name.split('.').pop() || 'jpg'
-        const path = `${HARDCODED_USER_ID}/${today}/${mealType}_${Date.now()}.${ext}`
+        const path = `${user.id}/${today}/${mealType}_${Date.now()}.${ext}`
         const { error: uploadErr } = await supabase.storage
           .from('meal-photos')
           .upload(path, imageFile, { contentType: imageFile.type })
@@ -109,7 +109,7 @@ export default function LogMeal() {
         image_url = publicUrl
       }
       const { error: insertErr } = await supabase.from('meals').insert({
-        user_id: HARDCODED_USER_ID,
+        user_id: user.id,
         date: today,
         meal_type: mealType,
         description,
@@ -198,6 +198,11 @@ export default function LogMeal() {
                 >
                   Retake
                 </button>
+                {!result && (
+                  <p className="mt-2 text-xs text-gray-400 text-center">
+                    Tip: Include the full plate and any sides for a more accurate estimate.
+                  </p>
+                )}
               </div>
             ) : (
               <button
@@ -215,7 +220,7 @@ export default function LogMeal() {
           </div>
         )}
 
-        {/* Text input — details to sharpen the photo estimate, or primary input for text mode */}
+        {/* Text input */}
         {showInitialText && (
           <div>
             <label className="text-xs font-medium text-gray-500 uppercase tracking-wide block mb-1">
@@ -223,7 +228,7 @@ export default function LogMeal() {
             </label>
             <p className="text-xs text-gray-400 mb-2">
               {imagePreview
-                ? 'Sent to the AI along with your photo. Mention portions or ingredients the camera can’t judge for a more accurate estimate.'
+                ? "Mention portions or ingredients the camera can't judge for a more accurate estimate."
                 : 'The AI estimates calories and macros from your description.'}
             </p>
             <textarea
@@ -240,21 +245,28 @@ export default function LogMeal() {
 
         {/* Analyze button */}
         {canAnalyze && (
-          <button
-            onClick={handleAnalyze}
-            disabled={analyzing}
-            className="w-full h-12 bg-green-600 text-white rounded-2xl font-semibold text-sm disabled:opacity-60 flex items-center justify-center gap-2"
-          >
-            {analyzing ? (
-              <>
-                <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                </svg>
-                Analyzing…
-              </>
-            ) : <><IconSparkles size={16} stroke={1.5} /> Analyze with AI</>}
-          </button>
+          <div className="space-y-2">
+            <button
+              onClick={handleAnalyze}
+              disabled={analyzing}
+              className="w-full h-12 bg-green-600 text-white rounded-2xl font-semibold text-sm disabled:opacity-60 flex items-center justify-center gap-2"
+            >
+              {analyzing ? (
+                <>
+                  <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                  </svg>
+                  Analyzing…
+                </>
+              ) : <><IconSparkles size={16} stroke={1.5} /> Analyze with AI</>}
+            </button>
+            {!analyzing && (
+              <p className="text-xs text-gray-400 text-center">
+                AI estimates nutrition — you can edit the numbers before saving.
+              </p>
+            )}
+          </div>
         )}
 
         {error && (
@@ -264,7 +276,9 @@ export default function LogMeal() {
         {/* Results editor */}
         {result && (
           <div className="bg-white rounded-2xl shadow-sm p-4 space-y-4">
-            <h2 className="font-semibold text-gray-900 flex items-center gap-1.5"><IconChartPie size={16} stroke={1.5} className="text-gray-500" /> Nutrition Details</h2>
+            <h2 className="font-semibold text-gray-900 flex items-center gap-1.5">
+              <IconChartPie size={16} stroke={1.5} className="text-gray-500" /> Nutrition Details
+            </h2>
 
             <div>
               <label className="text-xs font-medium text-gray-500 block mb-1">Description</label>
@@ -337,9 +351,11 @@ export default function LogMeal() {
             <button
               onClick={handleSaveFavorite}
               disabled={savedFav}
-              className="w-full text-sm font-medium py-1.5 text-green-600 disabled:text-gray-400 transition-colors"
+              className="w-full text-sm font-medium py-1.5 text-green-600 disabled:text-gray-400 transition-colors flex items-center justify-center gap-1"
             >
-              {savedFav ? <><IconStarFilled size={14} className="text-yellow-500" /> Saved to favorites!</> : <><IconStar size={14} /> Save as Favorite</>}
+              {savedFav
+                ? <><IconStarFilled size={14} className="text-yellow-500" /> Saved to favorites!</>
+                : <><IconStar size={14} /> Save as Favorite</>}
             </button>
           </div>
         )}
@@ -348,9 +364,9 @@ export default function LogMeal() {
         {!result && !imagePreview && !textInput.trim() && mode !== 'photo' && mode !== 'text' && (
           <button
             onClick={() => setResult({ items: [] })}
-            className="w-full text-sm text-gray-400 underline text-center"
+            className="w-full h-10 rounded-xl border border-gray-200 text-sm text-gray-500 font-medium bg-white"
           >
-            Enter manually without AI
+            Skip AI — enter manually
           </button>
         )}
 

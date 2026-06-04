@@ -80,6 +80,36 @@ function ItemField({ label, value, onChange, unit, type = 'number' }) {
   )
 }
 
+function DeleteButton({ onDelete }) {
+  const [confirming, setConfirming] = useState(false)
+  if (confirming) {
+    return (
+      <div className="flex gap-2">
+        <button
+          onClick={() => setConfirming(false)}
+          className="flex-1 h-12 rounded-2xl text-sm font-semibold bg-gray-100 text-gray-700"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={onDelete}
+          className="flex-1 h-12 rounded-2xl text-sm font-semibold bg-red-500 text-white"
+        >
+          Delete
+        </button>
+      </div>
+    )
+  }
+  return (
+    <button
+      onClick={() => setConfirming(true)}
+      className="w-full h-12 rounded-2xl text-sm font-semibold text-red-500 bg-red-50 active:bg-red-100 transition-colors"
+    >
+      Delete Meal
+    </button>
+  )
+}
+
 export default function MealDetailModal({ meal, onClose, onEdit, onDelete, onLogAgain, onSaveFavorite, onUpdate }) {
   const [mealData, setMealData] = useState(meal)
   const [view, setView] = useState('detail')
@@ -227,13 +257,10 @@ export default function MealDetailModal({ meal, onClose, onEdit, onDelete, onLog
             )}
 
             <div className="px-4 mb-4">
-              <div className="flex items-start justify-between gap-3 mb-1.5">
+              <div className="flex items-start gap-3 mb-1.5">
                 <p className="text-gray-900 text-xl font-semibold leading-snug flex-1">
                   {mealData.description || meta.label}
                 </p>
-                <div className="bg-gray-100 px-3 py-1.5 rounded-xl flex-shrink-0">
-                  <span className="text-gray-600 text-sm font-medium">× 1</span>
-                </div>
               </div>
               <p className="text-gray-500 text-base">
                 <span className="text-green-600 text-2xl font-bold">{mealData.calories}</span> kcal
@@ -312,10 +339,7 @@ export default function MealDetailModal({ meal, onClose, onEdit, onDelete, onLog
                 </button>
               )}
               {onDelete && (
-                <button onClick={() => { onDelete(mealData.id); onClose() }}
-                  className="w-full h-12 rounded-2xl text-sm font-semibold text-red-500 bg-red-50 active:bg-red-100 transition-colors">
-                  Delete Meal
-                </button>
+                <DeleteButton onDelete={() => { onDelete(mealData.id); onClose() }} />
               )}
             </div>
           </>

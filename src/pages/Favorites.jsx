@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useFavorites } from '../hooks/useFavorites'
+import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
-import { HARDCODED_USER_ID, MEAL_TYPES, toLocalDateString } from '../lib/utils'
+import { MEAL_TYPES, toLocalDateString } from '../lib/utils'
 import { getMealIcon } from '../lib/mealIcons'
 import NutrinoLogo from '../components/NutrinoLogo'
 import MacroForm, { EMPTY_MACRO_FORM } from '../components/MacroForm'
@@ -10,9 +11,10 @@ import { IconPlus, IconPencil, IconTrash } from '@tabler/icons-react'
 
 export default function Favorites() {
   const navigate = useNavigate()
+  const { user } = useAuth()
   const { favorites, loading, create, update, remove } = useFavorites()
 
-  const [logId, setLogId] = useState(null)      // favorite being quick-added
+  const [logId, setLogId] = useState(null)
   const [selectedType, setSelectedType] = useState('breakfast')
   const [adding, setAdding] = useState(false)
 
@@ -31,7 +33,7 @@ export default function Favorites() {
   const handleLog = async (fav) => {
     setAdding(true)
     await supabase.from('meals').insert({
-      user_id: HARDCODED_USER_ID,
+      user_id: user.id,
       date: toLocalDateString(),
       meal_type: selectedType,
       description: fav.name,
@@ -106,7 +108,11 @@ export default function Favorites() {
         {loading ? (
           <p className="text-sm text-gray-400 py-2">Loading…</p>
         ) : favorites.length === 0 && !showAdd ? (
-          <p className="text-sm text-gray-400 py-2">No favorites yet. Save one from any meal entry, or add it manually below.</p>
+          <div className="flex flex-col items-center justify-center py-10 text-center">
+            <span className="text-4xl mb-3">⭐</span>
+            <p className="text-sm text-gray-500 font-medium">No favorites yet</p>
+            <p className="text-xs text-gray-400 mt-1">Save a meal from the log screen, or add one manually below.</p>
+          </div>
         ) : (
           favorites.map(fav => (
             <div key={fav.id} className="bg-white rounded-2xl border border-gray-200 px-3 py-3">

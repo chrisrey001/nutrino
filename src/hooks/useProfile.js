@@ -1,37 +1,40 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
-import { HARDCODED_USER_ID } from '../lib/utils'
+import { useAuth } from '../contexts/AuthContext'
 
-const DEFAULT_PROFILE = {
-  id: HARDCODED_USER_ID,
+const defaultProfile = (userId) => ({
+  id: userId ?? '',
   name: '',
-  calorie_goal: 2100,
-  carbs_goal_g: 131,
-  protein_goal_g: 236,
-  fats_goal_g: 70,
+  calorie_goal: 2000,
+  carbs_goal_g: 200,
+  protein_goal_g: 150,
+  fats_goal_g: 65,
   dietician_name: ''
-}
+})
 
 export function useProfile() {
-  const [profile, setProfile] = useState(DEFAULT_PROFILE)
+  const { user } = useAuth()
+  const [profile, setProfile] = useState(() => defaultProfile(user?.id))
   const [loading, setLoading] = useState(true)
 
   const fetch = useCallback(async () => {
+    if (!user?.id) return
     const { data } = await supabase
       .from('profiles')
       .select('*')
-      .eq('id', HARDCODED_USER_ID)
+      .eq('id', user.id)
       .single()
     if (data) setProfile(data)
     setLoading(false)
-  }, [])
+  }, [user?.id])
 
   useEffect(() => { fetch() }, [fetch])
 
   const save = async (updates) => {
+    if (!user?.id) return null
     const { data } = await supabase
       .from('profiles')
-      .upsert({ ...updates, id: HARDCODED_USER_ID, updated_at: new Date().toISOString() })
+      .upsert({ ...updates, id: user.id, updated_at: new Date().toISOString() })
       .select()
       .single()
     if (data) setProfile(data)

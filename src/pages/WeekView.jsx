@@ -4,7 +4,7 @@ import { useProfile } from '../hooks/useProfile'
 import NutrinoLogo from '../components/NutrinoLogo'
 import { getWeekDates, sumMacros, toLocalDateString, generateWeeklyNote, formatTime } from '../lib/utils'
 import { exportReport } from '../lib/pdf'
-import { generateWeekInsight } from '../lib/gemini'
+import { generateWeekInsight } from '../lib/analyzeWithAI'
 import {
   IconSparkles, IconChartBar, IconCalendarStats, IconFlame, IconTarget,
   IconChartDonut3, IconTrendingUp, IconBread, IconMeat, IconDroplet
@@ -254,20 +254,15 @@ export default function WeekView() {
     const cached = loadCachedInsight(weekKey)
     const stale = isCacheStale(cached, isPastWeek)
 
-    // Use cache if fresh, or if stale but before 9pm on current week (show yesterday's rather than nothing)
     if (cached && (!stale || (!isPastWeek && !isPastNinepm()))) {
       setAiInsight({ text: cached.text, generatedAt: cached.generatedAt })
       return
     }
 
-    // Before 9pm on current week with no cache at all → show static, no API call
     if (!isPastWeek && !isPastNinepm() && !cached) return
 
-    // Auto-generate: past week (always) or current week after 9pm or stale cache
-    const apiKey = localStorage.getItem('gemini_api_key')
-    if (!apiKey) return
     setInsightLoading(true)
-    generateWeekInsight(weekStats, apiKey)
+    generateWeekInsight(weekStats)
       .then(text => {
         if (text) {
           saveCachedInsight(weekKey, text)
@@ -279,10 +274,9 @@ export default function WeekView() {
   }, [weekKey, loading, daysWithMeals])
 
   const handleRefreshInsight = useCallback(() => {
-    const apiKey = localStorage.getItem('gemini_api_key')
-    if (!apiKey || insightLoading || daysWithMeals === 0) return
+    if (insightLoading || daysWithMeals === 0) return
     setInsightLoading(true)
-    generateWeekInsight(weekStats, apiKey)
+    generateWeekInsight(weekStats)
       .then(text => {
         if (text) {
           saveCachedInsight(weekKey, text)
@@ -315,9 +309,9 @@ export default function WeekView() {
     if (!prev || prev === 0) return null
     const diff = current - prev
     const pct = Math.abs(Math.round((diff / prev) * 100))
-    if (Math.abs(diff) < 2) return <span className="text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full">→</span>
-    if (diff > 0) return <span className="text-xs text-red-500 bg-red-50 px-1.5 py-0.5 rounded-full">↑{pct}%</span>
-    return <span className="text-xs text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full">↓{pct}%</span>
+    if (Math.abs(diff) < 2) return <span className="text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full">Steady vs last week</span>
+    if (diff > 0) return <span className="text-xs text-red-500 bg-red-50 px-1.5 py-0.5 rounded-full">↑ {pct}% vs last week</span>
+    return <span className="text-xs text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full">↓ {pct}% vs last week</span>
   }
 
   return (
@@ -350,7 +344,13 @@ export default function WeekView() {
           <div className="flex flex-col items-center justify-center h-64 text-center">
             <IconChartBar size={48} stroke={1} className="text-gray-300 mb-3" />
             <p className="text-gray-500 text-sm font-medium">No meals logged this week</p>
-            <p className="text-gray-400 text-xs mt-1">Start logging to see your trends</p>
+            <p className="text-gray-400 text-xs mt-1 mb-4">Start logging to see your trends</p>
+            <button
+              onClick={() => window.location.href = '/'}
+              className="h-10 px-5 bg-green-600 text-white rounded-2xl text-sm font-semibold"
+            >
+              Log a meal
+            </button>
           </div>
         ) : (
           <>
@@ -361,7 +361,7 @@ export default function WeekView() {
                   <IconSparkles size={16} stroke={1.5} className="text-blue-500" />
                   <p className="text-xs font-bold text-blue-700 uppercase tracking-wide">Weekly Insight</p>
                 </div>
-                {localStorage.getItem('gemini_api_key') && !insightLoading && daysWithMeals > 0 && (
+                {!insightLoading && daysWithMeals > 0 && (
                   <button onClick={handleRefreshInsight} className="text-blue-400 p-1 active:opacity-50" aria-label="Refresh insight">
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -387,8 +387,8 @@ export default function WeekView() {
               ) : (
                 <>
                   <p className="text-sm text-blue-900 leading-relaxed">{staticInsight}</p>
-                  {!isPastNinepm() && localStorage.getItem('gemini_api_key') && daysWithMeals > 0 && (
-                    <p className="text-xs text-blue-400 mt-2">AI summary updates at 9pm when the day is complete</p>
+                  {!isPastNinepm() && daysWithMeals > 0 && (
+                    <p className="text-xs text-blue-400 mt-2">AI summary updates at 9 PM (your local time) when the day is complete</p>
                   )}
                 </>
               )}
@@ -474,6 +474,18 @@ export default function WeekView() {
               </div>
               <p className="text-xs text-gray-400 mb-2">Daily goal: {profile.calorie_goal} kcal · dashed line</p>
               <CaloriesBarChart weekDates={weekDates} mealsByDate={mealsByDate} goal={profile.calorie_goal} />
+              <div className="flex items-center gap-4 mt-2 flex-wrap">
+                {[
+                  { color: '#22c55e', label: 'On target' },
+                  { color: '#f59e0b', label: 'Over budget' },
+                  { color: '#ef4444', label: 'Way over' },
+                ].map(({ color, label }) => (
+                  <span key={label} className="flex items-center gap-1 text-xs text-gray-400">
+                    <span className="inline-block w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ background: color }} />
+                    {label}
+                  </span>
+                ))}
+              </div>
             </div>
 
             {/* Per-macro cards */}
@@ -528,7 +540,7 @@ export default function WeekView() {
               <p className="text-xs text-red-500 text-center mt-2">{exportError}</p>
             ) : (
               <p className="text-xs text-gray-400 text-center mt-2">
-                Opens the iOS share sheet — choose Mail, Messages, or Save to Files.
+                Generates a PDF you can share or save to your device.
               </p>
             )}
           </>

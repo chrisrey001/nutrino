@@ -1,28 +1,31 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-import { HARDCODED_USER_ID } from '../lib/utils'
+import { useAuth } from '../contexts/AuthContext'
 
 export function useFavorites() {
+  const { user } = useAuth()
   const [favorites, setFavorites] = useState([])
   const [loading, setLoading] = useState(true)
 
   const fetch = async () => {
+    if (!user?.id) return
     const { data } = await supabase
       .from('favorites')
       .select('*')
-      .eq('user_id', HARDCODED_USER_ID)
+      .eq('user_id', user.id)
       .order('created_at', { ascending: false })
     setFavorites(data || [])
     setLoading(false)
   }
 
-  useEffect(() => { fetch() }, [])
+  useEffect(() => { fetch() }, [user?.id])
 
   const create = async (data) => {
+    if (!user?.id) return null
     const { data: row } = await supabase
       .from('favorites')
       .insert({
-        user_id: HARDCODED_USER_ID,
+        user_id: user.id,
         name: data.name || data.description || 'Unnamed',
         description: data.description || '',
         calories: data.calories || 0,
