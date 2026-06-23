@@ -57,7 +57,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-white max-w-md mx-auto">
+    <div className="min-h-full bg-white">
       {/* Header */}
       <div className="bg-white sticky top-0 z-10 px-4 pt-10 pb-3 border-b border-gray-100 shadow-sm relative">
         <div className="flex items-center justify-between">
@@ -136,7 +136,7 @@ export default function Dashboard() {
       </div>
 
       {/* Scrollable content */}
-      <div className="px-4 pt-4 pb-28 space-y-4">
+      <div className="px-4 pt-4 pb-24 space-y-4">
         <CaloriesCard eaten={totals.calories} goal={profile.calorie_goal} />
         <MacrosCard
           carbs={totals.carbs_g} carbsGoal={profile.carbs_goal_g}
