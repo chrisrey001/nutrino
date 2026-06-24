@@ -547,20 +547,18 @@ export default function WeekView() {
     <div className="bg-gray-50">
       {/* Sticky header */}
       <div className="bg-white border-b border-gray-100 px-4 pt-10 pb-3 sticky top-0 z-10 shadow-sm">
-        <div className="flex items-center justify-between mb-3">
+        {/* Line 1: branding */}
+        <div className="flex items-center justify-between">
+          <NutrinoLogo />
+          <span className="text-sm font-bold bg-gradient-to-r from-green-600 to-emerald-500 bg-clip-text text-transparent">Analytics</span>
+        </div>
+        {/* Line 2: nav arrows flanking the Weekly/Monthly toggle */}
+        <div className="flex items-center justify-between mt-2">
           <button onClick={handlePrev} className="p-2 text-gray-500 active:text-green-600">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-          <NutrinoLogo className="justify-center" />
-          <button onClick={handleNext} disabled={isAtPresent} className="p-2 text-gray-500 active:text-green-600 disabled:opacity-30">
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
-        </div>
-        <div className="flex justify-center mb-2">
           <div className="flex bg-gray-100 rounded-xl p-0.5 gap-0.5">
             <button
               onClick={() => setViewMode('week')}
@@ -571,8 +569,14 @@ export default function WeekView() {
               className={`px-5 py-1.5 rounded-[10px] text-sm font-medium transition-all ${!isWeekly ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500'}`}
             >Monthly</button>
           </div>
+          <button onClick={handleNext} disabled={isAtPresent} className="p-2 text-gray-500 active:text-green-600 disabled:opacity-30">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
         </div>
-        <p className="text-xs text-center text-gray-500">{isWeekly ? weekLabel : monthLabel}</p>
+        {/* Date range context */}
+        <p className="text-xs text-center text-gray-400 mt-1.5">{isWeekly ? weekLabel : monthLabel}</p>
       </div>
 
       <div className="px-4 pt-4 pb-8 space-y-4">
