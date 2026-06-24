@@ -11,7 +11,7 @@ export default function MealCard({ meal, onClick, onAdd, compact = false }) {
     return (
       <div
         onClick={onClick}
-        className="bg-gray-50 border border-gray-100 rounded-2xl p-3 cursor-pointer active:bg-gray-100 transition-colors flex items-center gap-3"
+        className="bg-white border border-gray-200 shadow-sm rounded-2xl p-3 cursor-pointer active:bg-gray-50 transition-colors flex items-center gap-3"
       >
         <div className="w-10 h-10 rounded-xl bg-green-50 flex items-center justify-center text-lg flex-shrink-0">
           {meal.image_url
@@ -29,7 +29,7 @@ export default function MealCard({ meal, onClick, onAdd, compact = false }) {
 
   return (
     <div
-      className="bg-white border border-gray-100 shadow-sm rounded-3xl overflow-hidden cursor-pointer active:bg-gray-50 transition-colors"
+      className="bg-white border border-gray-200 shadow-md rounded-3xl overflow-hidden cursor-pointer active:bg-gray-50 transition-colors"
       onClick={onClick}
     >
       {/* Header */}
@@ -60,7 +60,7 @@ export default function MealCard({ meal, onClick, onAdd, compact = false }) {
           {meal.items.map((item, i) => (
             <div
               key={i}
-              className="flex items-center justify-between py-2.5 border-b border-gray-100 last:border-0"
+              className="flex items-center justify-between py-2.5 border-b border-gray-200 last:border-0"
             >
               <span className="text-gray-800 text-sm">{item.name}</span>
               <span className="text-sm">
@@ -73,7 +73,7 @@ export default function MealCard({ meal, onClick, onAdd, compact = false }) {
       )}
 
       {/* Footer: + Add */}
-      <div className="border-t border-gray-100 mt-2 py-3 flex items-center justify-center">
+      <div className="border-t border-gray-200 mt-2 py-3 flex items-center justify-center">
         <button
           className="text-green-600 text-sm font-semibold flex items-center gap-1 px-6 py-1 active:opacity-60"
           onClick={e => { e.stopPropagation(); onAdd?.() }}

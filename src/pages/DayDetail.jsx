@@ -45,7 +45,7 @@ export default function DayDetail() {
   }
 
   return (
-    <div className="min-h-full bg-white">
+    <div className="min-h-full bg-gray-50">
       {/* Sticky date nav */}
       <div className="bg-white sticky top-0 z-10 px-4 pt-10 pb-3 border-b border-gray-100 shadow-sm">
         <div className="flex items-center justify-between">

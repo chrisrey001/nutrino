@@ -109,7 +109,7 @@ export default function Favorites() {
           <p className="text-sm text-gray-400 py-2">No favorites yet. Save one from any meal entry, or add it manually below.</p>
         ) : (
           favorites.map(fav => (
-            <div key={fav.id} className="bg-white rounded-2xl border border-gray-200 px-3 py-3">
+            <div key={fav.id} className="bg-white rounded-2xl border border-gray-200 shadow-sm px-3 py-3">
               <div className="flex items-center justify-between">
                 <div className="flex-1 min-w-0 pr-3">
                   <p className="text-sm font-medium text-gray-900 break-words">{fav.name}</p>
@@ -181,7 +181,7 @@ export default function Favorites() {
         )}
 
         {showAdd ? (
-          <div className="bg-white rounded-2xl border border-green-200 px-3 py-3">
+          <div className="bg-white rounded-2xl border border-green-200 shadow-sm px-3 py-3">
             <p className="text-sm font-medium text-gray-700">New Favorite</p>
             <MacroForm
               form={addForm}

@@ -263,7 +263,7 @@ export default function LogMeal() {
 
         {/* Results editor */}
         {result && (
-          <div className="bg-white rounded-2xl shadow-sm p-4 space-y-4">
+          <div className="bg-white rounded-2xl shadow-md border border-gray-200 p-4 space-y-4">
             <h2 className="font-semibold text-gray-900 flex items-center gap-1.5"><IconChartPie size={16} stroke={1.5} className="text-gray-500" /> Nutrition Details</h2>
 
             <div>
