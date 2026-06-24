@@ -136,6 +136,21 @@ Write 2-3 plain sentences, no bullet points, no markdown. Start with the most no
   return callGeminiText([{ text: prompt }], apiKey)
 }
 
+export async function generateMonthInsight(monthStats, apiKey) {
+  if (!apiKey) return null
+  const { avgCal, calGoal, avgCarbs, carbsGoal, avgProtein, proteinGoal, avgFats, fatsGoal, daysLogged, totalDays } = monthStats
+  const prompt = `You are a friendly nutrition coach. Based on this month's food log data, write 2-3 concise sentences of practical insight and one actionable tip. Be specific, not generic.
+
+Data (daily averages across ${daysLogged} logged days out of ${totalDays}):
+- Calories: ${avgCal} kcal (goal: ${calGoal} kcal)
+- Carbs: ${avgCarbs}g (goal: ${carbsGoal}g)
+- Protein: ${avgProtein}g (goal: ${proteinGoal}g)
+- Fats: ${avgFats}g (goal: ${fatsGoal}g)
+
+Write 2-3 plain sentences, no bullet points, no markdown. Start with the most notable monthly pattern.`
+  return callGeminiText([{ text: prompt }], apiKey)
+}
+
 export async function analyzeMeal(imageFile, apiKey, textContext = null, mealType = null) {
   if (!apiKey) throw new Error('No Gemini API key. Add it in Settings.')
   const compressed = await compressImageFile(imageFile)

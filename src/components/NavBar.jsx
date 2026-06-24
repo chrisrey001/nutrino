@@ -2,7 +2,7 @@ import { NavLink } from 'react-router-dom'
 
 const tabs = [
   { to: '/', label: 'Today', icon: TodayIcon },
-  { to: '/week', label: 'Week', icon: WeekIcon },
+  { to: '/week', label: 'Analytics', icon: WeekIcon },
   { to: '/settings', label: 'Settings', icon: SettingsIcon }
 ]
 
