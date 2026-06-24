@@ -36,11 +36,16 @@ export default function Settings() {
   if (loading) return <div className="flex items-center justify-center h-screen text-gray-400 text-sm">Loading…</div>
 
   return (
-    <div className="px-4 pt-10 pb-8 max-w-md mx-auto">
-      <NutrinoLogo className="mb-1" />
-      <h1 className="text-xl font-bold text-gray-900 mb-6 mt-1">Settings</h1>
+    <div className="min-h-full bg-gray-50">
+      {/* Sticky header */}
+      <div className="bg-white sticky top-0 z-10 px-4 pt-10 pb-3 border-b border-gray-100 shadow-sm">
+        <div className="flex items-center gap-2">
+          <NutrinoLogo />
+          <span className="text-xs font-semibold text-green-700 uppercase tracking-widest">Settings</span>
+        </div>
+      </div>
 
-      <div className="space-y-6">
+      <div className="px-4 pt-4 pb-8 max-w-md mx-auto space-y-6">
         {/* Profile */}
         <section className="bg-white rounded-2xl shadow-md border border-gray-200 p-4 space-y-4">
           <h2 className="text-sm font-semibold text-gray-700 flex items-center gap-1.5"><IconUser size={15} stroke={1.5} />Profile</h2>

@@ -547,18 +547,23 @@ export default function WeekView() {
     <div className="bg-gray-50">
       {/* Sticky header */}
       <div className="bg-white border-b border-gray-100 px-4 pt-10 pb-3 sticky top-0 z-10 shadow-sm">
-        <div className="flex items-center justify-between mb-3">
-          <button onClick={handlePrev} className="p-2 text-gray-500 active:text-green-600">
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-          <NutrinoLogo className="justify-center" />
-          <button onClick={handleNext} disabled={isAtPresent} className="p-2 text-gray-500 active:text-green-600 disabled:opacity-30">
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <NutrinoLogo />
+            <span className="text-xs font-semibold text-green-700 uppercase tracking-widest">Analytics</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <button onClick={handlePrev} className="p-2 text-gray-500 active:text-green-600">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+            <button onClick={handleNext} disabled={isAtPresent} className="p-2 text-gray-500 active:text-green-600 disabled:opacity-30">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          </div>
         </div>
         <div className="flex justify-center mb-2">
           <div className="flex bg-gray-100 rounded-xl p-0.5 gap-0.5">

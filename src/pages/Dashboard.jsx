@@ -61,9 +61,9 @@ export default function Dashboard() {
       {/* Header */}
       <div className="bg-white sticky top-0 z-10 px-4 pt-10 pb-3 border-b border-gray-100 shadow-sm relative">
         <div className="flex items-center justify-between">
-          <div>
+          <div className="flex items-center gap-2">
             <NutrinoLogo />
-            <p className="text-xs text-gray-500 mt-0.5">{daySubLabel}</p>
+            <span className="text-xs font-semibold text-green-700 uppercase tracking-widest">Today</span>
           </div>
           <div className="flex items-center gap-1">
             <button
@@ -94,6 +94,7 @@ export default function Dashboard() {
             </button>
           </div>
         </div>
+        <p className="text-xs text-center text-gray-500 mt-1.5">{daySubLabel}</p>
 
         {/* Week picker */}
         {showWeekPicker && (
