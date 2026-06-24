@@ -51,7 +51,7 @@ export function CaloriesCard({ eaten, goal }) {
   const remaining = Math.max(0, goal - eaten)
 
   return (
-    <div className="bg-gray-50 rounded-3xl p-5">
+    <div className="bg-white rounded-3xl p-5 border border-gray-200 shadow-md">
       <div className="flex items-center gap-1.5 mb-4">
         <IconFlame size={16} stroke={1.5} className="text-teal-500" />
         <p className="text-sm font-bold text-gray-900">Calories</p>
@@ -88,7 +88,7 @@ export function CaloriesCard({ eaten, goal }) {
 
 export function MacrosCard({ carbs, carbsGoal, protein, proteinGoal, fats, fatsGoal }) {
   return (
-    <div className="bg-gray-50 rounded-3xl p-5">
+    <div className="bg-white rounded-3xl p-5 border border-gray-200 shadow-md">
       <div className="flex items-center gap-1.5 mb-4">
         <IconChartDonut size={16} stroke={1.5} className="text-gray-500" />
         <p className="text-sm font-bold text-gray-900">Macros</p>

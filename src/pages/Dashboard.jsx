@@ -57,7 +57,7 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-full bg-white">
+    <div className="min-h-full bg-gray-50">
       {/* Header */}
       <div className="bg-white sticky top-0 z-10 px-4 pt-10 pb-3 border-b border-gray-100 shadow-sm relative">
         <div className="flex items-center justify-between">

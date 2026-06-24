@@ -321,7 +321,7 @@ export default function WeekView() {
   }
 
   return (
-    <div className="bg-white">
+    <div className="bg-gray-50">
       {/* Sticky header */}
       <div className="bg-white border-b border-gray-100 px-4 pt-10 pb-3 sticky top-0 z-10 shadow-sm">
         <div className="flex items-center justify-between">
@@ -401,7 +401,7 @@ export default function WeekView() {
                 { label: 'Avg Calories', value: avgCal.toLocaleString(), sub: 'kcal/day', icon: <IconFlame size={18} stroke={1.5} className="text-teal-400" /> },
                 { label: 'Calorie Goal', value: profile.calorie_goal.toLocaleString(), sub: 'kcal/day', icon: <IconTarget size={18} stroke={1.5} className="text-blue-400" /> },
               ].map(({ label, value, sub, icon }) => (
-                <div key={label} className="bg-gray-50 rounded-2xl p-3 text-center">
+                <div key={label} className="bg-white rounded-2xl p-3 text-center border border-gray-200 shadow-sm">
                   <div className="flex justify-center mb-1">{icon}</div>
                   <p className="text-lg font-bold text-gray-900">{value}</p>
                   <p className="text-xs text-gray-400 mt-0.5">{sub}</p>
@@ -410,7 +410,7 @@ export default function WeekView() {
             </div>
 
             {/* Dietary Balance */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
+            <div className="bg-white rounded-2xl shadow-md border border-gray-200 p-4">
               <div className="flex items-center gap-1.5 mb-3">
                 <IconChartDonut3 size={16} stroke={1.5} className="text-gray-500" />
                 <p className="text-sm font-bold text-gray-900">Dietary Balance</p>
@@ -439,7 +439,7 @@ export default function WeekView() {
             </div>
 
             {/* Budget & Intake */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
+            <div className="bg-white rounded-2xl shadow-md border border-gray-200 p-4">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-1.5">
                   <IconTrendingUp size={16} stroke={1.5} className="text-gray-500" />
@@ -460,7 +460,7 @@ export default function WeekView() {
             </div>
 
             {/* Meal Calories */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
+            <div className="bg-white rounded-2xl shadow-md border border-gray-200 p-4">
               <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center gap-1.5">
                   <IconChartBar size={16} stroke={1.5} className="text-gray-500" />
@@ -484,7 +484,7 @@ export default function WeekView() {
             ].map(({ label, macroKey, goalG, color, avg, prevAvg, icon }) => {
               const targetPct = goalG > 0 ? Math.round((avg / goalG) * 100) : 0
               return (
-                <div key={label} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
+                <div key={label} className="bg-white rounded-2xl shadow-md border border-gray-200 p-4">
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-1.5">{icon}<p className="text-sm font-bold text-gray-900">{label}</p></div>
                     <div className="flex items-center gap-1.5">
