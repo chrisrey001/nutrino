@@ -39,9 +39,9 @@ export default function Settings() {
     <div className="min-h-full bg-gray-50">
       {/* Sticky header */}
       <div className="bg-white sticky top-0 z-10 px-4 pt-10 pb-3 border-b border-gray-100 shadow-sm">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between">
           <NutrinoLogo />
-          <span className="text-xs font-semibold text-green-700 uppercase tracking-widest">Settings</span>
+          <span className="text-sm font-semibold text-gray-500">Settings</span>
         </div>
       </div>
 
