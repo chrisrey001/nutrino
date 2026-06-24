@@ -550,7 +550,7 @@ export default function WeekView() {
         {/* Line 1: branding */}
         <div className="flex items-center justify-between">
           <NutrinoLogo />
-          <span className="text-sm font-semibold text-gray-500">Analytics</span>
+          <span className="text-sm font-bold bg-gradient-to-r from-green-600 to-emerald-500 bg-clip-text text-transparent">Analytics</span>
         </div>
         {/* Line 2: nav arrows flanking the Weekly/Monthly toggle */}
         <div className="flex items-center justify-between mt-2">

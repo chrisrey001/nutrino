@@ -41,7 +41,7 @@ export default function Settings() {
       <div className="bg-white sticky top-0 z-10 px-4 pt-10 pb-3 border-b border-gray-100 shadow-sm">
         <div className="flex items-center justify-between">
           <NutrinoLogo />
-          <span className="text-sm font-semibold text-gray-500">Settings</span>
+          <span className="text-sm font-bold bg-gradient-to-r from-green-600 to-emerald-500 bg-clip-text text-transparent">Settings</span>
         </div>
       </div>
 

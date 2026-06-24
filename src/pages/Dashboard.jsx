@@ -63,7 +63,7 @@ export default function Dashboard() {
         {/* Line 1: branding */}
         <div className="flex items-center justify-between">
           <NutrinoLogo />
-          <span className="text-sm font-semibold text-gray-500">Today</span>
+          <span className="text-sm font-bold bg-gradient-to-r from-green-600 to-emerald-500 bg-clip-text text-transparent">Today</span>
         </div>
         {/* Line 2: date navigation */}
         <div className="flex items-center justify-between mt-2">
