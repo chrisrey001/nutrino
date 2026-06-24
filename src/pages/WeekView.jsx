@@ -197,6 +197,44 @@ function MonthlyBarChart({ days, goal }) {
   )
 }
 
+function MonthlyMacroLineChart({ days }) {
+  const W = 320, H = 130
+  const pL = 8, pR = 8, pT = 12, pB = 22
+  const plotW = W - pL - pR, plotH = H - pT - pB
+  const n = days.length
+  const maxVal = Math.max(...days.flatMap(d => [d.carbs_g, d.protein_g, d.fats_g]), 1) * 1.15
+  const toX = i => pL + (i / Math.max(n - 1, 1)) * plotW
+  const toY = v => pT + plotH - (v / maxVal) * plotH
+  const makePts = key => days.map((d, i) => `${toX(i).toFixed(1)},${toY(d[key]).toFixed(1)}`).join(' ')
+  const milestones = [0, 6, 13, 20, 27].filter(i => i < n)
+  const lines = [
+    { key: 'carbs_g', color: '#3b82f6' },
+    { key: 'protein_g', color: '#8b5cf6' },
+    { key: 'fats_g', color: '#f97316' },
+  ]
+  return (
+    <svg width="100%" viewBox={`0 0 ${W} ${H}`}>
+      {[0, 0.5, 1].map(t => (
+        <line key={t} x1={pL} y1={toY(maxVal * t)} x2={W - pR} y2={toY(maxVal * t)} stroke="#f3f4f6" strokeWidth={1} />
+      ))}
+      {lines.map(({ key, color }) => (
+        <polyline key={key} points={makePts(key)} fill="none" stroke={color}
+          strokeWidth={1.8} strokeLinejoin="round" strokeLinecap="round" opacity={0.9} />
+      ))}
+      {lines.map(({ key, color }) =>
+        milestones.map(i => (
+          <circle key={`${key}-${i}`} cx={toX(i)} cy={toY(days[i][key])} r={2.5} fill={color} />
+        ))
+      )}
+      {milestones.map(i => (
+        <text key={i} x={toX(i)} y={H - 4} textAnchor="middle" fontSize={8} fill="#9ca3af">
+          {new Date(days[i].date + 'T12:00:00').getDate()}
+        </text>
+      ))}
+    </svg>
+  )
+}
+
 function WeekBreakdownTable({ monthDates, mealsByDate, goal }) {
   const weeks = []
   let current = []
@@ -207,13 +245,23 @@ function WeekBreakdownTable({ monthDates, mealsByDate, goal }) {
   }
   if (current.length) weeks.push(current)
 
+  const weekData = weeks.map(week => {
+    const logged = week.filter(d => (mealsByDate[d] || []).length > 0)
+    const totals = sumMacros(logged.flatMap(d => mealsByDate[d] || []))
+    return {
+      week,
+      logged,
+      avgCal: logged.length > 0 ? Math.round(totals.calories / logged.length) : 0,
+      avgProt: logged.length > 0 ? Math.round(totals.protein_g / logged.length) : 0,
+    }
+  })
+
   return (
     <div className="divide-y divide-gray-50">
-      {weeks.map((week, wi) => {
-        const logged = week.filter(d => (mealsByDate[d] || []).length > 0)
-        const totals = sumMacros(logged.flatMap(d => mealsByDate[d] || []))
-        const avgCal = logged.length > 0 ? Math.round(totals.calories / logged.length) : 0
-        const avgProt = logged.length > 0 ? Math.round(totals.protein_g / logged.length) : 0
+      {weekData.map(({ week, logged, avgCal, avgProt }, wi) => {
+        const prev = wi > 0 ? weekData[wi - 1] : null
+        const calDiff = prev && prev.avgCal > 0 && avgCal > 0
+          ? Math.round(((avgCal - prev.avgCal) / prev.avgCal) * 100) : null
         const s = new Date(week[0] + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
         const e = new Date(week[week.length - 1] + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
         const calPct = goal > 0 ? avgCal / goal : 0
@@ -224,9 +272,18 @@ function WeekBreakdownTable({ monthDates, mealsByDate, goal }) {
               <p className="text-xs font-semibold text-gray-700">{s} – {e}</p>
               <p className="text-xs text-gray-400">{logged.length}/{week.length} days logged</p>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <div className="text-right">
-                <p className={`text-sm font-bold ${calColor}`}>{avgCal > 0 ? avgCal.toLocaleString() : '—'}</p>
+                <div className="flex items-center justify-end gap-1">
+                  <p className={`text-sm font-bold ${calColor}`}>{avgCal > 0 ? avgCal.toLocaleString() : '—'}</p>
+                  {calDiff !== null && (
+                    Math.abs(calDiff) < 2
+                      ? <span className="text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full">→</span>
+                      : calDiff > 0
+                        ? <span className="text-xs text-red-500 bg-red-50 px-1.5 py-0.5 rounded-full">↑{Math.abs(calDiff)}%</span>
+                        : <span className="text-xs text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full">↓{Math.abs(calDiff)}%</span>
+                  )}
+                </div>
                 <p className="text-xs text-gray-400">kcal avg</p>
               </div>
               <div className="text-right">
@@ -381,6 +438,11 @@ export default function WeekView() {
   const dailyCalData = useMemo(() => monthDates.map(d => ({
     date: d, calories: sumMacros(monthMealsByDate[d] || []).calories
   })), [monthDates, monthMealsByDate])
+
+  const dailyMacroData = useMemo(() => monthDates.map(d => {
+    const t = sumMacros(monthMealsByDate[d] || [])
+    return { date: d, carbs_g: Math.round(t.carbs_g), protein_g: Math.round(t.protein_g), fats_g: Math.round(t.fats_g) }
+  }), [monthDates, monthMealsByDate])
 
   const monthDaysWithCals = dailyCalData.filter(d => d.calories > 0)
   const adherencePct = monthDaysWithCals.length > 0
@@ -729,6 +791,27 @@ export default function WeekView() {
               <MonthlyBarChart days={dailyCalData} goal={profile.calorie_goal} />
             </div>
 
+            {/* Monthly macro trends line chart */}
+            <div className="bg-white rounded-2xl shadow-md border border-gray-200 p-4">
+              <div className="flex items-center gap-1.5 mb-2">
+                <IconTrendingUp size={16} stroke={1.5} className="text-gray-500" />
+                <p className="text-sm font-bold text-gray-900">Macro Trends</p>
+              </div>
+              <div className="flex items-center gap-4 mb-2">
+                {[
+                  { label: 'Carbs', color: '#3b82f6' },
+                  { label: 'Protein', color: '#8b5cf6' },
+                  { label: 'Fat', color: '#f97316' },
+                ].map(({ label, color }) => (
+                  <span key={label} className="flex items-center gap-1 text-xs text-gray-500">
+                    <svg width="16" height="8"><line x1="0" y1="4" x2="16" y2="4" stroke={color} strokeWidth="2" /></svg>
+                    {label}
+                  </span>
+                ))}
+              </div>
+              <MonthlyMacroLineChart days={dailyMacroData} />
+            </div>
+
             {/* Week-by-week breakdown */}
             <div className="bg-white rounded-2xl shadow-md border border-gray-200 p-4">
               <div className="flex items-center gap-1.5 mb-1">
@@ -749,17 +832,17 @@ export default function WeekView() {
                 <DonutChart carbs={monthTotals.carbs_g} protein={monthTotals.protein_g} fats={monthTotals.fats_g} />
                 <div className="flex-1 space-y-3">
                   {[
-                    { label: 'Carbs', pct: mCarbsPct, color: '#3b82f6', avg: monthAvgCarbs },
-                    { label: 'Protein', pct: mProtPct, color: '#8b5cf6', avg: monthAvgProtein },
-                    { label: 'Fat', pct: mFatPct, color: '#f97316', avg: monthAvgFats },
-                  ].map(({ label, pct, color, avg }) => (
+                    { label: 'Carbs', pct: mCarbsPct, color: '#3b82f6', actual: Math.round(monthTotals.carbs_g), monthGoal: profile.carbs_goal_g * monthDates.length },
+                    { label: 'Protein', pct: mProtPct, color: '#8b5cf6', actual: Math.round(monthTotals.protein_g), monthGoal: profile.protein_goal_g * monthDates.length },
+                    { label: 'Fat', pct: mFatPct, color: '#f97316', actual: Math.round(monthTotals.fats_g), monthGoal: profile.fats_goal_g * monthDates.length },
+                  ].map(({ label, pct, color, actual, monthGoal }) => (
                     <div key={label} className="flex items-center gap-2">
                       <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: color }} />
                       <div className="flex-1 flex justify-between items-center">
                         <span className="text-xs font-medium text-gray-700">{label}</span>
                         <div className="text-right">
                           <span className="text-xs font-bold" style={{ color }}>{pct}%</span>
-                          <span className="text-xs text-gray-400 ml-1">· {avg}g</span>
+                          <span className="text-xs text-gray-400 ml-1">· {actual.toLocaleString()}g / {monthGoal.toLocaleString()}g</span>
                         </div>
                       </div>
                     </div>
