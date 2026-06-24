@@ -110,6 +110,41 @@ export function generateWeeklyNote(weekTotals, goals, dayCount) {
   return parts.join(' ')
 }
 
+export function getMonthDates(monthOffset = 0) {
+  const now = new Date()
+  const y = now.getFullYear()
+  const m = now.getMonth() + monthOffset
+  const first = new Date(y, m, 1)
+  const daysInMonth = new Date(y, m + 1, 0).getDate()
+  return Array.from({ length: daysInMonth }, (_, i) => {
+    const d = new Date(first)
+    d.setDate(i + 1)
+    return toLocalDateString(d)
+  })
+}
+
+export function formatMonthYear(dateStr) {
+  const d = new Date(dateStr + 'T12:00:00')
+  return d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+}
+
+export function generateMonthlyNote(monthTotals, goals, dayCount, totalDays) {
+  if (dayCount === 0) return 'No meals logged this month.'
+  const avgCal = Math.round(monthTotals.calories / dayCount)
+  const avgProt = Math.round(monthTotals.protein_g / dayCount)
+  const calPct = goals.calorie_goal > 0 ? Math.round((avgCal / goals.calorie_goal) * 100) : 0
+  const protPct = goals.protein_goal_g > 0 ? Math.round((avgProt / goals.protein_goal_g) * 100) : 0
+  const parts = [
+    `Logged ${dayCount} of ${totalDays} days.`,
+    `Average daily intake: ${avgCal} kcal (${calPct}% of goal).`,
+    `Average protein: ${avgProt}g (${protPct}% of goal).`
+  ]
+  if (calPct < 90) parts.push('Generally under calorie target this month.')
+  else if (calPct > 110) parts.push('Slightly over calorie target on average.')
+  else parts.push('Calorie intake well within target range.')
+  return parts.join(' ')
+}
+
 export function fileToBase64(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()

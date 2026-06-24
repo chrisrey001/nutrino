@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { supabase } from '../lib/supabase'
-import { HARDCODED_USER_ID } from '../lib/utils'
+import { HARDCODED_USER_ID, getMonthDates } from '../lib/utils'
 
 export function useMeals(date) {
   const [meals, setMeals] = useState([])
@@ -52,4 +52,9 @@ export function useMealsRange(dates) {
   useEffect(() => { fetch() }, [fetch])
 
   return { mealsByDate, loading, refresh: fetch }
+}
+
+export function useMealsMonth(monthOffset) {
+  const dates = useMemo(() => getMonthDates(monthOffset), [monthOffset])
+  return useMealsRange(dates)
 }
