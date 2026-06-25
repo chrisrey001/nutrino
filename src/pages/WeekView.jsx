@@ -317,6 +317,14 @@ function RefreshButton({ onClick }) {
   )
 }
 
+function CardBadge({ icon }) {
+  return (
+    <span className="w-6 h-6 rounded-lg bg-gradient-to-br from-emerald-400 to-green-600 flex items-center justify-center flex-shrink-0 text-white">
+      {icon}
+    </span>
+  )
+}
+
 function InsightCard({ label, insight, loading, staticText, showUpdateHint, onRefresh, hasApiKey }) {
   return (
     <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-4">
@@ -607,9 +615,9 @@ export default function WeekView() {
 
             <div className="grid grid-cols-3 gap-2">
               {[
-                { value: `${daysWithMeals}/7`, sub: 'this week', icon: <IconCalendarStats size={18} stroke={1.5} className="text-gray-400" /> },
-                { value: avgCal.toLocaleString(), sub: 'kcal/day', icon: <IconFlame size={18} stroke={1.5} className="text-teal-400" /> },
-                { value: profile.calorie_goal.toLocaleString(), sub: 'kcal goal', icon: <IconTarget size={18} stroke={1.5} className="text-blue-400" /> },
+                { value: `${daysWithMeals}/7`, sub: 'this week', icon: <span className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center"><IconCalendarStats size={18} stroke={1.8} className="text-gray-400" /></span> },
+                { value: avgCal.toLocaleString(), sub: 'kcal/day', icon: <span className="w-9 h-9 rounded-full bg-teal-50 flex items-center justify-center"><IconFlame size={18} stroke={1.8} className="text-teal-500" /></span> },
+                { value: profile.calorie_goal.toLocaleString(), sub: 'kcal goal', icon: <span className="w-9 h-9 rounded-full bg-blue-50 flex items-center justify-center"><IconTarget size={18} stroke={1.8} className="text-blue-500" /></span> },
               ].map(({ value, sub, icon }, i) => (
                 <div key={i} className="bg-white rounded-2xl p-3 text-center border border-gray-200 shadow-sm">
                   <div className="flex justify-center mb-1">{icon}</div>
@@ -620,8 +628,8 @@ export default function WeekView() {
             </div>
 
             <div className="bg-white rounded-2xl shadow-md border border-gray-200 p-4">
-              <div className="flex items-center gap-1.5 mb-3">
-                <IconChartDonut3 size={16} stroke={1.5} className="text-gray-500" />
+              <div className="flex items-center gap-2 mb-3">
+                <CardBadge icon={<IconChartDonut3 size={14} stroke={2} />} />
                 <p className="text-sm font-bold text-gray-900">Dietary Balance</p>
               </div>
               <div className="flex items-center gap-5">
@@ -649,8 +657,8 @@ export default function WeekView() {
 
             <div className="bg-white rounded-2xl shadow-md border border-gray-200 p-4">
               <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-1.5">
-                  <IconTrendingUp size={16} stroke={1.5} className="text-gray-500" />
+                <div className="flex items-center gap-2">
+                  <CardBadge icon={<IconTrendingUp size={14} stroke={2} />} />
                   <p className="text-sm font-bold text-gray-900">Budget & Intake</p>
                 </div>
                 <div className="flex items-center gap-3">
@@ -669,8 +677,8 @@ export default function WeekView() {
 
             <div className="bg-white rounded-2xl shadow-md border border-gray-200 p-4">
               <div className="flex items-center justify-between mb-1">
-                <div className="flex items-center gap-1.5">
-                  <IconChartBar size={16} stroke={1.5} className="text-gray-500" />
+                <div className="flex items-center gap-2">
+                  <CardBadge icon={<IconChartBar size={14} stroke={2} />} />
                   <p className="text-sm font-bold text-gray-900">Meal Calories</p>
                 </div>
                 <div className="flex items-center gap-1.5">
@@ -684,15 +692,15 @@ export default function WeekView() {
             </div>
 
             {[
-              { label: 'Carbs', macroKey: 'carbs_g', goalG: profile.carbs_goal_g, color: '#3b82f6', avg: avgCarbs, prevAvg: prevAvgCarbs, icon: <IconBread size={15} stroke={1.5} color="#3b82f6" /> },
-              { label: 'Protein', macroKey: 'protein_g', goalG: profile.protein_goal_g, color: '#8b5cf6', avg: avgProtein, prevAvg: prevAvgProtein, icon: <IconMeat size={15} stroke={1.5} color="#8b5cf6" /> },
-              { label: 'Fat', macroKey: 'fats_g', goalG: profile.fats_goal_g, color: '#f97316', avg: avgFats, prevAvg: prevAvgFats, icon: <IconDroplet size={15} stroke={1.5} color="#f97316" /> },
+              { label: 'Carbs', macroKey: 'carbs_g', goalG: profile.carbs_goal_g, color: '#3b82f6', avg: avgCarbs, prevAvg: prevAvgCarbs, icon: <span className="w-6 h-6 rounded-lg bg-blue-50 flex items-center justify-center flex-shrink-0"><IconBread size={14} stroke={2} color="#3b82f6" /></span> },
+              { label: 'Protein', macroKey: 'protein_g', goalG: profile.protein_goal_g, color: '#8b5cf6', avg: avgProtein, prevAvg: prevAvgProtein, icon: <span className="w-6 h-6 rounded-lg bg-purple-50 flex items-center justify-center flex-shrink-0"><IconMeat size={14} stroke={2} color="#8b5cf6" /></span> },
+              { label: 'Fat', macroKey: 'fats_g', goalG: profile.fats_goal_g, color: '#f97316', avg: avgFats, prevAvg: prevAvgFats, icon: <span className="w-6 h-6 rounded-lg bg-orange-50 flex items-center justify-center flex-shrink-0"><IconDroplet size={14} stroke={2} color="#f97316" /></span> },
             ].map(({ label, macroKey, goalG, color, avg, prevAvg, icon }) => {
               const targetPct = goalG > 0 ? Math.round((avg / goalG) * 100) : 0
               return (
                 <div key={label} className="bg-white rounded-2xl shadow-md border border-gray-200 p-4">
                   <div className="flex items-center justify-between mb-1">
-                    <div className="flex items-center gap-1.5">{icon}<p className="text-sm font-bold text-gray-900">{label}</p></div>
+                    <div className="flex items-center gap-2">{icon}<p className="text-sm font-bold text-gray-900">{label}</p></div>
                     <div className="flex items-center gap-1.5">
                       <span className="text-sm font-bold text-gray-900">{avg}g</span>
                       <span className="text-xs text-gray-400">avg</span>
@@ -756,24 +764,24 @@ export default function WeekView() {
                 {
                   value: `${monthDaysWithMeals}/${monthDates.length}`,
                   sub: 'days logged',
-                  icon: <IconCalendarStats size={18} stroke={1.5} className="text-gray-400" />
+                  icon: <span className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center"><IconCalendarStats size={18} stroke={1.8} className="text-gray-400" /></span>
                 },
                 {
                   value: monthAvgCal > 0 ? monthAvgCal.toLocaleString() : '—',
                   sub: 'avg kcal/day',
-                  icon: <IconFlame size={18} stroke={1.5} className="text-teal-400" />,
+                  icon: <span className="w-9 h-9 rounded-full bg-teal-50 flex items-center justify-center"><IconFlame size={18} stroke={1.8} className="text-teal-500" /></span>,
                   valueColor: monthAvgCal === 0 ? '' : monthAvgCal / profile.calorie_goal > 1.1 ? 'text-amber-500' : 'text-gray-900'
                 },
                 {
                   value: monthAvgProtein > 0 ? `${monthAvgProtein}g` : '—',
                   sub: 'avg protein/day',
-                  icon: <IconMeat size={18} stroke={1.5} color="#8b5cf6" />,
+                  icon: <span className="w-9 h-9 rounded-full bg-purple-50 flex items-center justify-center"><IconMeat size={18} stroke={1.8} color="#8b5cf6" /></span>,
                   valueColor: 'text-purple-600'
                 },
                 {
                   value: monthDaysWithCals.length > 0 ? `${adherencePct}%` : '—',
                   sub: 'days on target',
-                  icon: <IconCheck size={18} stroke={1.5} className="text-green-500" />,
+                  icon: <span className="w-9 h-9 rounded-full bg-green-50 flex items-center justify-center"><IconCheck size={18} stroke={1.8} className="text-green-500" /></span>,
                   valueColor: adherencePct >= 80 ? 'text-green-600' : adherencePct >= 50 ? 'text-amber-500' : 'text-red-500'
                 },
               ].map(({ value, sub, icon, valueColor = 'text-gray-900' }, i) => (
@@ -788,8 +796,8 @@ export default function WeekView() {
             {/* Monthly calorie trend */}
             <div className="bg-white rounded-2xl shadow-md border border-gray-200 p-4">
               <div className="flex items-center justify-between mb-1">
-                <div className="flex items-center gap-1.5">
-                  <IconChartBar size={16} stroke={1.5} className="text-gray-500" />
+                <div className="flex items-center gap-2">
+                  <CardBadge icon={<IconChartBar size={14} stroke={2} />} />
                   <p className="text-sm font-bold text-gray-900">Daily Calories</p>
                 </div>
                 <span className="text-xs text-gray-400">{monthDates.length} days</span>
@@ -800,8 +808,8 @@ export default function WeekView() {
 
             {/* Monthly macro trends line chart */}
             <div className="bg-white rounded-2xl shadow-md border border-gray-200 p-4">
-              <div className="flex items-center gap-1.5 mb-2">
-                <IconTrendingUp size={16} stroke={1.5} className="text-gray-500" />
+              <div className="flex items-center gap-2 mb-2">
+                <CardBadge icon={<IconTrendingUp size={14} stroke={2} />} />
                 <p className="text-sm font-bold text-gray-900">Macro Trends</p>
               </div>
               <div className="flex items-center gap-4 mb-2">
@@ -821,8 +829,8 @@ export default function WeekView() {
 
             {/* Week-by-week breakdown */}
             <div className="bg-white rounded-2xl shadow-md border border-gray-200 p-4">
-              <div className="flex items-center gap-1.5 mb-1">
-                <IconTrendingUp size={16} stroke={1.5} className="text-gray-500" />
+              <div className="flex items-center gap-2 mb-1">
+                <CardBadge icon={<IconTrendingUp size={14} stroke={2} />} />
                 <p className="text-sm font-bold text-gray-900">Week by Week</p>
               </div>
               <p className="text-xs text-gray-400 mb-3">Average daily figures per calendar week</p>
@@ -831,8 +839,8 @@ export default function WeekView() {
 
             {/* Monthly macro split */}
             <div className="bg-white rounded-2xl shadow-md border border-gray-200 p-4">
-              <div className="flex items-center gap-1.5 mb-3">
-                <IconChartDonut3 size={16} stroke={1.5} className="text-gray-500" />
+              <div className="flex items-center gap-2 mb-3">
+                <CardBadge icon={<IconChartDonut3 size={14} stroke={2} />} />
                 <p className="text-sm font-bold text-gray-900">Macro Split</p>
               </div>
               <div className="flex items-center gap-5">

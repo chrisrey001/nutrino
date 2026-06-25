@@ -48,14 +48,24 @@ export default function Settings() {
       <div className="px-4 pt-4 pb-8 max-w-md mx-auto space-y-6">
         {/* Profile */}
         <section className="bg-white rounded-2xl shadow-md border border-gray-200 p-4 space-y-4">
-          <h2 className="text-sm font-semibold text-gray-700 flex items-center gap-1.5"><IconUser size={15} stroke={1.5} />Profile</h2>
+          <h2 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+            <span className="w-6 h-6 rounded-lg bg-gradient-to-br from-emerald-400 to-green-600 flex items-center justify-center flex-shrink-0">
+              <IconUser size={14} stroke={2} className="text-white" />
+            </span>
+            Profile
+          </h2>
           <Field label="Your Name" value={form.name || ''} onChange={set('name')} placeholder="e.g. Chris" />
           <Field label="Dietician Name" value={form.dietician_name || ''} onChange={set('dietician_name')} placeholder="Appears on PDF reports" />
         </section>
 
         {/* Goals */}
         <section className="bg-white rounded-2xl shadow-md border border-gray-200 p-4 space-y-4">
-          <h2 className="text-sm font-semibold text-gray-700 flex items-center gap-1.5"><IconTarget size={15} stroke={1.5} />Daily Goals</h2>
+          <h2 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+            <span className="w-6 h-6 rounded-lg bg-gradient-to-br from-emerald-400 to-green-600 flex items-center justify-center flex-shrink-0">
+              <IconTarget size={14} stroke={2} className="text-white" />
+            </span>
+            Daily Goals
+          </h2>
           <Field label="Calories (kcal)" value={form.calorie_goal} onChange={set('calorie_goal')} type="number" />
           <Field label="Carbs (g)" value={form.carbs_goal_g} onChange={set('carbs_goal_g')} type="number" />
           <Field label="Protein (g)" value={form.protein_goal_g} onChange={set('protein_goal_g')} type="number" />
@@ -64,7 +74,12 @@ export default function Settings() {
 
         {/* Favorites */}
         <section className="bg-white rounded-2xl shadow-md border border-gray-200 p-4 space-y-3">
-          <h2 className="text-sm font-semibold text-gray-700 flex items-center gap-1.5"><IconStar size={15} stroke={1.5} />Favorites</h2>
+          <h2 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+            <span className="w-6 h-6 rounded-lg bg-gradient-to-br from-emerald-400 to-green-600 flex items-center justify-center flex-shrink-0">
+              <IconStar size={14} stroke={2} className="text-white" />
+            </span>
+            Favorites
+          </h2>
           <p className="text-xs text-gray-400">Saved meals for quick logging. Add manually or from any meal entry.</p>
           <button
             onClick={() => navigate('/favorites')}
@@ -77,7 +92,12 @@ export default function Settings() {
 
         {/* API Key */}
         <section className="bg-white rounded-2xl shadow-md border border-gray-200 p-4 space-y-3">
-          <h2 className="text-sm font-semibold text-gray-700 flex items-center gap-1.5"><IconKey size={15} stroke={1.5} />Gemini API Key</h2>
+          <h2 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+            <span className="w-6 h-6 rounded-lg bg-gradient-to-br from-emerald-400 to-green-600 flex items-center justify-center flex-shrink-0">
+              <IconKey size={14} stroke={2} className="text-white" />
+            </span>
+            Gemini API Key
+          </h2>
           <p className="text-xs text-gray-400">Enter once — stored locally on this device only, never sent to any server.</p>
           <input
             type="password"
