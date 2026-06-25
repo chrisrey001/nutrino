@@ -8,10 +8,11 @@ import MealDetailModal from '../components/MealDetailModal'
 import EditMealModal from '../components/EditMealModal'
 import LogActionSheet from '../components/LogActionSheet'
 import NutrinoLogo from '../components/NutrinoLogo'
+import EmptyState from '../components/EmptyState'
 import { CaloriesCard, MacrosCard } from '../components/DayStats'
 import { toLocalDateString, getWeekDates, sumMacros } from '../lib/utils'
 import { supabase } from '../lib/supabase'
-import { IconToolsKitchen2 } from '@tabler/icons-react'
+import { IconToolsKitchen2, IconSparkles } from '@tabler/icons-react'
 
 const TODAY = toLocalDateString()
 
@@ -147,11 +148,19 @@ export default function Dashboard() {
         {loading ? (
           <div className="flex items-center justify-center h-32 text-gray-400 text-sm">Loading…</div>
         ) : meals.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-40 text-center">
-            <IconToolsKitchen2 size={48} stroke={1} className="text-gray-300 mb-3" />
-            <p className="text-gray-500 text-sm">No meals logged yet</p>
-            <p className="text-gray-400 text-xs mt-1">{isToday ? 'Tap + to log your first meal' : 'Nothing logged this day'}</p>
-          </div>
+          <EmptyState
+            icon={<IconToolsKitchen2 size={32} stroke={1.5} />}
+            title={isToday ? 'Nothing logged yet' : 'Nothing logged this day'}
+            subtitle={isToday ? 'Snap a photo and let AI do the macros.' : undefined}
+            action={isToday ? (
+              <button
+                onClick={() => setShowActionSheet(true)}
+                className="bg-gradient-to-r from-emerald-500 to-green-600 text-white text-sm font-semibold px-5 py-2.5 rounded-2xl shadow-md shadow-green-600/25 flex items-center gap-1.5"
+              >
+                <IconSparkles size={16} stroke={1.8} /> Log your first meal
+              </button>
+            ) : undefined}
+          />
         ) : (
           <div className="space-y-3">
             {meals.map(meal => (
