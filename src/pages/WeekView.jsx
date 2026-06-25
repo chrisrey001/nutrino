@@ -8,7 +8,6 @@ import {
   getWeekDates, getMonthDates, sumMacros, toLocalDateString,
   generateWeeklyNote, generateMonthlyNote, formatMonthYear, formatTime
 } from '../lib/utils'
-import { exportReport } from '../lib/pdf'
 import { generateWeekInsight, generateMonthInsight } from '../lib/gemini'
 import {
   IconSparkles, IconChartBar, IconCalendarStats, IconFlame, IconTarget,
@@ -534,7 +533,10 @@ export default function WeekView() {
 
   const handleExport = async () => {
     setExportError(null); setExporting(true)
-    try { await exportReport(weekDates, mealsByDate, profile) }
+    try {
+      const { exportReport } = await import('../lib/pdf')
+      await exportReport(weekDates, mealsByDate, profile)
+    }
     catch { setExportError('Could not generate the report. Please try again.') }
     finally { setExporting(false) }
   }
