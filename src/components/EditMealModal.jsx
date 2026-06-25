@@ -120,7 +120,7 @@ export default function EditMealModal({ meal, onClose, onSaved }) {
             {MEAL_TYPES.map(m => (
               <button key={m.value} onClick={() => setMealType(m.value)}
                 className={`py-2 px-2 rounded-xl text-xs font-medium transition-colors flex items-center justify-center gap-1 ${
-                  mealType === m.value ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-600'
+                  mealType === m.value ? 'bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-md shadow-green-600/25' : 'bg-gray-100 text-gray-600'
                 }`}>
                 {getMealIcon(m.value, 13)} {m.label}
               </button>
@@ -182,7 +182,7 @@ export default function EditMealModal({ meal, onClose, onSaved }) {
         {error && <p className="text-sm text-red-600 bg-red-50 rounded-xl px-3 py-2">{error}</p>}
 
         <button onClick={handleSave} disabled={saving}
-          className="w-full h-12 bg-green-600 text-white rounded-2xl font-semibold text-sm disabled:opacity-60">
+          className="w-full h-12 bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-2xl font-semibold text-sm shadow-md shadow-green-600/30 disabled:opacity-60">
           {saving ? 'Saving…' : 'Save Changes'}
         </button>
       </div>

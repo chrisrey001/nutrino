@@ -154,15 +154,20 @@ export default function LogMeal() {
 
   return (
     <div className="min-h-screen bg-gray-50 max-w-md mx-auto">
-      <div className="bg-white border-b border-gray-100 px-4 pt-10 pb-4 flex items-center gap-3">
-        <button onClick={() => navigate(-1)} className="p-1 -ml-1 text-gray-500">
-          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-          </svg>
-        </button>
-        <div>
+      <div className="bg-white sticky top-0 z-10 px-4 pt-10 pb-3 border-b border-gray-100 shadow-sm">
+        {/* Line 1: branding */}
+        <div className="flex items-center justify-between">
           <NutrinoLogo />
-          {modeLabel && <p className="text-xs text-gray-400 mt-0.5">{modeLabel}</p>}
+          <span className="text-sm font-bold bg-gradient-to-r from-green-600 to-emerald-500 bg-clip-text text-transparent">Log Meal</span>
+        </div>
+        {/* Line 2: back + mode label */}
+        <div className="flex items-center gap-2 mt-2">
+          <button onClick={() => navigate(-1)} className="w-9 h-9 flex items-center justify-center text-gray-500 rounded-xl active:bg-gray-100 transition-colors">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          {modeLabel && <span className="text-xs text-gray-500">{modeLabel}</span>}
         </div>
       </div>
 
@@ -176,7 +181,7 @@ export default function LogMeal() {
                 key={m.value}
                 onClick={() => setMealType(m.value)}
                 className={`py-2 px-2 rounded-xl text-xs font-medium transition-colors flex items-center justify-center gap-1 ${
-                  mealType === m.value ? 'bg-green-600 text-white' : 'bg-white text-gray-600 border border-gray-200'
+                  mealType === m.value ? 'bg-gradient-to-br from-emerald-500 to-green-600 text-white font-semibold shadow-md shadow-green-600/25' : 'bg-white text-gray-600 border border-gray-200'
                 }`}
               >
                 {getMealIcon(m.value, 13)} {m.label}
@@ -202,13 +207,15 @@ export default function LogMeal() {
             ) : (
               <button
                 onClick={() => fileRef.current?.click()}
-                className="w-full h-44 bg-white border-2 border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center gap-2 text-gray-400"
+                className="w-full h-44 bg-gradient-to-b from-emerald-50/60 to-white border-2 border-dashed border-emerald-200 rounded-2xl flex flex-col items-center justify-center gap-2"
               >
-                <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                  <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
-                  <circle cx="12" cy="13" r="4" />
-                </svg>
-                <span className="text-sm font-medium">Take a photo</span>
+                <span className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-400 to-green-600 flex items-center justify-center shadow-lg shadow-green-600/20">
+                  <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                    <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z" />
+                    <circle cx="12" cy="13" r="4" />
+                  </svg>
+                </span>
+                <span className="text-sm font-semibold text-gray-600">Take a photo</span>
               </button>
             )}
             <input ref={fileRef} type="file" accept="image/*" capture="environment" onChange={handleFile} className="hidden" />
@@ -243,7 +250,7 @@ export default function LogMeal() {
           <button
             onClick={handleAnalyze}
             disabled={analyzing}
-            className="w-full h-12 bg-green-600 text-white rounded-2xl font-semibold text-sm disabled:opacity-60 flex items-center justify-center gap-2"
+            className="w-full h-12 bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-2xl font-semibold text-sm shadow-md shadow-green-600/30 disabled:opacity-60 flex items-center justify-center gap-2"
           >
             {analyzing ? (
               <>
@@ -279,7 +286,7 @@ export default function LogMeal() {
                 <button
                   onClick={handleAnalyzeDescription}
                   disabled={analyzing}
-                  className="mt-2 w-full h-10 bg-green-600 text-white rounded-xl font-semibold text-sm disabled:opacity-60 flex items-center justify-center gap-2"
+                  className="mt-2 w-full h-10 bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-xl font-semibold text-sm shadow-md shadow-green-600/30 disabled:opacity-60 flex items-center justify-center gap-2"
                 >
                   {analyzing ? (
                     <>
@@ -358,7 +365,7 @@ export default function LogMeal() {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="w-full h-12 bg-green-600 text-white rounded-2xl font-semibold text-sm disabled:opacity-60"
+            className="w-full h-12 bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-2xl font-semibold text-sm shadow-md shadow-green-600/30 disabled:opacity-60"
           >
             {saving ? 'Saving…' : 'Save Meal'}
           </button>

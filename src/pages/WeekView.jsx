@@ -3,6 +3,7 @@ import { useMealsRange } from '../hooks/useMealsRange'
 import { useMealsMonth } from '../hooks/useMeals'
 import { useProfile } from '../hooks/useProfile'
 import NutrinoLogo from '../components/NutrinoLogo'
+import EmptyState from '../components/EmptyState'
 import {
   getWeekDates, getMonthDates, sumMacros, toLocalDateString,
   generateWeeklyNote, generateMonthlyNote, formatMonthYear, formatTime
@@ -583,11 +584,11 @@ export default function WeekView() {
         {currentLoading ? (
           <div className="flex items-center justify-center h-48 text-gray-400 text-sm">Loading…</div>
         ) : currentEmpty ? (
-          <div className="flex flex-col items-center justify-center h-64 text-center">
-            <IconChartBar size={48} stroke={1} className="text-gray-300 mb-3" />
-            <p className="text-gray-500 text-sm font-medium">No meals logged {isWeekly ? 'this week' : 'this month'}</p>
-            <p className="text-gray-400 text-xs mt-1">Start logging to see your trends</p>
-          </div>
+          <EmptyState
+            icon={<IconChartBar size={32} stroke={1.5} />}
+            title={`No meals logged ${isWeekly ? 'this week' : 'this month'}`}
+            subtitle="Start logging to see your trends"
+          />
         ) : isWeekly ? (
 
           /* ━━━━━━━━━━━━  WEEKLY VIEW  ━━━━━━━━━━━━ */
@@ -707,7 +708,7 @@ export default function WeekView() {
             <button
               onClick={handleExport}
               disabled={exporting}
-              className="w-full h-12 bg-green-600 text-white rounded-2xl text-sm font-semibold disabled:opacity-40 flex items-center justify-center gap-2"
+              className="w-full h-12 bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-2xl text-sm font-semibold shadow-md shadow-green-600/30 disabled:opacity-40 flex items-center justify-center gap-2"
             >
               {exporting ? (
                 <>

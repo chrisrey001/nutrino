@@ -35,7 +35,7 @@ export default function MacroForm({ form, onChange, onSave, onCancel, saving }) 
         <button
           onClick={onSave}
           disabled={!form.name.trim() || saving}
-          className="flex-1 h-9 bg-green-600 text-white rounded-xl text-sm font-semibold disabled:opacity-50"
+          className="flex-1 h-9 bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-xl text-sm font-semibold disabled:opacity-50"
         >
           {saving ? 'Saving…' : 'Save'}
         </button>

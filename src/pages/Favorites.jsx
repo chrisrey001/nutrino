@@ -88,15 +88,19 @@ export default function Favorites() {
 
   return (
     <div className="min-h-screen bg-gray-50 max-w-md mx-auto">
-      <div className="bg-white border-b border-gray-100 px-4 pt-10 pb-4 flex items-center gap-3">
-        <button onClick={() => navigate(-1)} className="p-1 -ml-1 text-gray-500">
-          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-          </svg>
-        </button>
-        <div>
+      <div className="bg-white sticky top-0 z-10 px-4 pt-10 pb-3 border-b border-gray-100 shadow-sm">
+        {/* Line 1: branding */}
+        <div className="flex items-center justify-between">
           <NutrinoLogo />
-          <p className="text-xs text-gray-400 mt-0.5">Favorites</p>
+          <span className="text-sm font-bold bg-gradient-to-r from-green-600 to-emerald-500 bg-clip-text text-transparent">Favorites</span>
+        </div>
+        {/* Line 2: back button */}
+        <div className="flex items-center mt-2">
+          <button onClick={() => navigate(-1)} className="w-9 h-9 flex items-center justify-center text-gray-500 rounded-xl active:bg-gray-100 transition-colors">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
         </div>
       </div>
 
@@ -134,7 +138,7 @@ export default function Favorites() {
                   </button>
                   <button
                     onClick={() => toggleLog(fav.id)}
-                    className="h-8 px-3 rounded-full bg-green-600 text-white text-xs font-semibold flex items-center gap-1"
+                    className="h-8 px-3 rounded-full bg-gradient-to-r from-emerald-500 to-green-600 text-white text-xs font-semibold shadow-sm shadow-green-600/30 flex items-center gap-1"
                   >
                     <IconPlus size={14} stroke={2} /> Log
                   </button>
@@ -150,7 +154,7 @@ export default function Favorites() {
                         key={m.value}
                         onClick={() => setSelectedType(m.value)}
                         className={`py-1.5 px-1 rounded-xl text-xs font-medium transition-colors flex items-center justify-center gap-1 ${
-                          selectedType === m.value ? 'bg-green-600 text-white' : 'bg-white text-gray-600 border border-gray-200'
+                          selectedType === m.value ? 'bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-md shadow-green-600/25' : 'bg-white text-gray-600 border border-gray-200'
                         }`}
                       >
                         {getMealIcon(m.value, 13)} {m.label}
@@ -160,7 +164,7 @@ export default function Favorites() {
                   <button
                     onClick={() => handleLog(fav)}
                     disabled={adding}
-                    className="w-full h-10 bg-green-600 text-white rounded-xl text-sm font-semibold disabled:opacity-60"
+                    className="w-full h-10 bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-xl text-sm font-semibold shadow-md shadow-green-600/30 disabled:opacity-60"
                   >
                     {adding ? 'Adding…' : 'Log it'}
                   </button>

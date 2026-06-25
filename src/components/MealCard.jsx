@@ -34,7 +34,7 @@ export default function MealCard({ meal, onClick, onAdd, compact = false }) {
     >
       {/* Header */}
       <div className="flex items-center justify-between px-4 pt-4 pb-3">
-        <span className="bg-green-50 text-green-700 text-xs font-semibold px-2.5 py-1 rounded-full flex items-center gap-1">
+        <span className="bg-gradient-to-r from-emerald-50 to-green-100 text-green-700 text-xs font-bold px-2.5 py-1 rounded-full flex items-center gap-1 ring-1 ring-green-200/60">
           {getMealIcon(meal.meal_type)} {meta.label}
         </span>
         <span className="text-gray-900 font-bold text-base">{displayCalories} <span className="text-gray-400 font-normal text-sm">kcal</span></span>
@@ -73,9 +73,9 @@ export default function MealCard({ meal, onClick, onAdd, compact = false }) {
       )}
 
       {/* Footer: + Add */}
-      <div className="border-t border-gray-200 mt-2 py-3 flex items-center justify-center">
+      <div className="border-t border-gray-100 mt-2 py-3 flex items-center justify-center">
         <button
-          className="text-green-600 text-sm font-semibold flex items-center gap-1 px-6 py-1 active:opacity-60"
+          className="text-sm font-bold bg-gradient-to-r from-green-600 to-emerald-500 bg-clip-text text-transparent flex items-center gap-1 px-6 py-1 active:opacity-60"
           onClick={e => { e.stopPropagation(); onAdd?.() }}
         >
           + Add

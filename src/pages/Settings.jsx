@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useProfile } from '../hooks/useProfile'
 import NutrinoLogo from '../components/NutrinoLogo'
-import { IconUser, IconTarget, IconStar, IconKey, IconChevronRight } from '@tabler/icons-react'
+import { IconUser, IconTarget, IconStar, IconKey, IconChevronRight, IconCheck } from '@tabler/icons-react'
 
 export default function Settings() {
   const navigate = useNavigate()
@@ -98,9 +98,9 @@ export default function Settings() {
 
         <button
           onClick={handleSave}
-          className="w-full h-12 bg-green-600 text-white rounded-2xl font-semibold text-sm"
+          className="w-full h-12 bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-2xl font-semibold text-sm shadow-md shadow-green-600/30 flex items-center justify-center gap-1.5"
         >
-          {saved ? '✓ Saved!' : 'Save Settings'}
+          {saved ? <><IconCheck size={16} stroke={2.5} /> Saved!</> : 'Save Settings'}
         </button>
       </div>
     </div>
