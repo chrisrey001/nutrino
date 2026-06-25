@@ -114,7 +114,7 @@ export default function Dashboard() {
                       disabled={isFuture}
                       className={`flex-1 flex flex-col items-center py-2 rounded-xl text-xs transition-colors ${
                         isSelected
-                          ? 'bg-green-600 text-white'
+                          ? 'bg-gradient-to-br from-emerald-500 to-green-600 text-white'
                           : isFuture
                           ? 'text-gray-300'
                           : 'text-gray-600 active:bg-gray-50'
@@ -179,7 +179,7 @@ export default function Dashboard() {
       {isToday && (
         <button
           onClick={() => setShowActionSheet(true)}
-          className="fixed bottom-24 right-4 w-14 h-14 bg-green-600 text-white rounded-full shadow-lg flex items-center justify-center z-50 active:scale-95 transition-transform"
+          className="fixed bottom-24 right-4 w-14 h-14 bg-gradient-to-br from-emerald-500 to-green-600 text-white rounded-full shadow-lg shadow-green-600/30 flex items-center justify-center z-50 active:scale-95 transition-transform"
           aria-label="Log a meal"
         >
           <IconToolsKitchen2 className="w-7 h-7" stroke={2} />

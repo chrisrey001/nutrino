@@ -193,7 +193,7 @@ export default function MealDetailModal({ meal, onClose, onEdit, onDelete, onLog
             </div>
 
             <button onClick={handleSaveItem} disabled={saving}
-              className="w-full h-12 bg-green-600 text-white rounded-2xl font-semibold text-sm disabled:opacity-60">
+              className="w-full h-12 bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-2xl font-semibold text-sm shadow-md shadow-green-600/30 disabled:opacity-60">
               {saving ? 'Saving…' : 'Save Changes'}
             </button>
           </div>
@@ -307,7 +307,7 @@ export default function MealDetailModal({ meal, onClose, onEdit, onDelete, onLog
               {onSaveFavorite && <SaveFavoriteButton meal={mealData} onSave={onSaveFavorite} />}
               {onLogAgain && (
                 <button onClick={() => { onClose(); onLogAgain(mealData) }}
-                  className="w-full h-12 bg-green-600 text-white rounded-2xl text-sm font-semibold active:opacity-80">
+                  className="w-full h-12 bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-2xl text-sm font-semibold shadow-md shadow-green-600/30 active:opacity-80">
                   Log Again Today
                 </button>
               )}

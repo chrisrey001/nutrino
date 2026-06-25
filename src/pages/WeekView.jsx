@@ -708,7 +708,7 @@ export default function WeekView() {
             <button
               onClick={handleExport}
               disabled={exporting}
-              className="w-full h-12 bg-green-600 text-white rounded-2xl text-sm font-semibold disabled:opacity-40 flex items-center justify-center gap-2"
+              className="w-full h-12 bg-gradient-to-r from-emerald-500 to-green-600 text-white rounded-2xl text-sm font-semibold shadow-md shadow-green-600/30 disabled:opacity-40 flex items-center justify-center gap-2"
             >
               {exporting ? (
                 <>
