@@ -46,27 +46,28 @@ export default function DayDetail() {
 
   return (
     <div className="min-h-full bg-gray-50">
-      {/* Sticky date nav */}
+      {/* Sticky header */}
       <div className="bg-white sticky top-0 z-10 px-4 pt-10 pb-3 border-b border-gray-100 shadow-sm">
+        {/* Line 1: branding */}
         <div className="flex items-center justify-between">
+          <NutrinoLogo />
+          <span className="text-sm font-bold bg-gradient-to-r from-green-600 to-emerald-500 bg-clip-text text-transparent">Details</span>
+        </div>
+        {/* Line 2: date navigation */}
+        <div className="flex items-center justify-between mt-2">
           <button
             onClick={() => navigate(`/day/${shiftDate(date, -1)}`)}
-            className="w-10 h-10 flex items-center justify-center bg-gray-100 rounded-2xl text-gray-600 active:bg-gray-200 transition-colors"
+            className="w-9 h-9 flex items-center justify-center text-gray-500 rounded-xl active:bg-gray-100 transition-colors"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-
-          <div className="text-center">
-            <NutrinoLogo className="justify-center" />
-            <p className="text-xs text-gray-500 mt-0.5">{dayLabel}</p>
-          </div>
-
+          <span className="text-sm font-medium text-gray-700">{dayLabel}</span>
           <button
             onClick={() => canGoNext && navigate(`/day/${shiftDate(date, 1)}`)}
             disabled={!canGoNext}
-            className="w-10 h-10 flex items-center justify-center bg-gray-100 rounded-2xl text-gray-600 active:bg-gray-200 transition-colors disabled:opacity-30"
+            className="w-9 h-9 flex items-center justify-center text-gray-500 rounded-xl active:bg-gray-100 transition-colors disabled:opacity-30"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
