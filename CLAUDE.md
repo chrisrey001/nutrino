@@ -1,13 +1,13 @@
 # CLAUDE.md — Nutrino
 
 ## What is this project?
-A mobile-first PWA for personal food logging. User photographs meals, Gemini 2.0 Flash estimates calories/macros, data is stored in Supabase, and weekly PDF reports are generated for a dietician.
+A mobile-first PWA for personal food logging. User photographs meals, Gemini 2.5 Flash estimates calories/macros, data is stored in Supabase, and weekly PDF reports are generated for a dietician.
 
 ## Tech stack
 - **Frontend:** React 18 + Vite + Tailwind CSS
 - **Backend:** Supabase (Postgres + Storage) — project ID: `qiznldtchxpiihcuydzn`
-- **AI:** Google Gemini 2.0 Flash (free tier, vision API)
-- **PDF:** html2pdf.js (client-side generation)
+- **AI:** Google Gemini 2.5 Flash (free tier, vision API)
+- **PDF:** jsPDF (client-side generation)
 - **Hosting:** Netlify (auto-deploy from GitHub main branch)
 
 ## Architecture rules
