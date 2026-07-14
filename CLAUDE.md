@@ -7,7 +7,7 @@ A mobile-first PWA for personal food logging. User photographs meals, Gemini 3.5
 - **Frontend:** React 18 + Vite + Tailwind CSS
 - **Backend:** Supabase (Postgres + Storage) — project ID: `qiznldtchxpiihcuydzn`
 - **AI:** Google Gemini 3.5 Flash (free tier, vision API)
-- **PDF:** html2pdf.js (client-side generation)
+- **PDF:** jsPDF (client-side generation, lazy-loaded from WeekView)
 - **Hosting:** Netlify (auto-deploy from GitHub main branch)
 
 ## Architecture rules
@@ -15,6 +15,7 @@ A mobile-first PWA for personal food logging. User photographs meals, Gemini 3.5
 - Gemini API key stored in localStorage, entered by user in Settings
 - Supabase credentials in VITE_ env vars (.env file, not committed)
 - All data writes go through Supabase JS client
+- No server-side or edge functions (Supabase or Netlify) — all AI calls run client-side from `src/lib/gemini.js` straight to the Gemini API
 - Images upload to Supabase Storage bucket `meal-photos` as public files
 - PDF generation is client-side only
 
@@ -23,10 +24,12 @@ A mobile-first PWA for personal food logging. User photographs meals, Gemini 3.5
 - `src/lib/gemini.js` — Gemini API call + JSON parsing
 - `src/lib/pdf.js` — full weekly PDF generation
 - `src/lib/utils.js` — HARDCODED_USER_ID, MEAL_TYPES, sumMacros, date helpers, analysis text generation
+- `src/lib/mealIcons.jsx` — Tabler icon map per meal type (getMealIcon)
 - `src/hooks/useProfile.js` — fetch/save the single profiles row
-- `src/hooks/useMeals.js` — fetch meals for a date; useMealsRange for a week
-- `src/pages/` — Dashboard, LogMeal, WeekView, DayDetail, Settings
-- `src/components/` — Layout, NavBar, MealCard, MacroBar
+- `src/hooks/useMeals.js` — fetch meals for a date; useMealsRange for a week; useMealsMonth
+- `src/hooks/useFavorites.js` — CRUD for saved favorite meals
+- `src/pages/` — Dashboard, LogMeal, WeekView, DayDetail, Favorites, Settings
+- `src/components/` — Layout, NavBar, MealCard, MacroBar, MealDetailModal, EditMealModal, DayStats, LogActionSheet, MacroForm
 
 ## Netlify setup
 1. Connect `chrisrey001/nutrino` repo in Netlify dashboard
